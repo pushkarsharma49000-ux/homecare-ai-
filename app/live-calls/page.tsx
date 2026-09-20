@@ -20,6 +20,7 @@ import {
   SentimentBadge,
 } from '@/components/ui/StatusBadge';
 import { getLiveCalls } from '@/lib/services/calls';
+import { formatDuration } from '@/lib/services/adapters';
 
 export default async function LiveCallsPage() {
   const liveCalls = await getLiveCalls();
@@ -27,7 +28,14 @@ export default async function LiveCallsPage() {
   const totalActive = liveCalls.length;
   const aiHandling = liveCalls.filter((c) => c.aiState !== 'Escalated').length;
   const escalated = liveCalls.filter((c) => c.aiState === 'Escalated').length;
-  const avgDuration = '01:52';
+  const avgDuration =
+    totalActive > 0
+      ? formatDuration(
+          Math.round(
+            liveCalls.reduce((acc, c) => acc + c.durationSeconds, 0) / totalActive
+          )
+        )
+      : '00:00';
 
   return (
     <div className="space-y-6">
@@ -87,7 +95,7 @@ export default async function LiveCallsPage() {
             <div>
               <p className="text-xs font-medium text-slate-500">Escalated to Human</p>
               <p className="text-2xl font-bold text-rose-600 mt-1">{escalated}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Water damage / urgent</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Urgent supervisor review</p>
             </div>
             <div className="p-2.5 rounded-lg bg-rose-50 text-rose-600">
               <AlertTriangle className="w-5 h-5" />
@@ -134,48 +142,62 @@ export default async function LiveCallsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {liveCalls.map((call) => (
-                <tr key={call.id} className="hover:bg-blue-50/40 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="font-semibold text-slate-900">{call.customerName}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">{call.customerPhone}</div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-medium">
-                      {call.appliance}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-slate-700 font-medium">{call.intent}</span>
-                  </td>
-                  <td className="px-5 py-3.5 max-w-xs truncate text-slate-800 font-normal">
-                    {call.issue}
-                  </td>
-                  <td className="px-5 py-3.5 font-mono text-slate-600 flex items-center gap-1.5 pt-4">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    {call.duration}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <AIStateBadge state={call.aiState} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <PriorityBadge priority={call.priority} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                      <span>{call.aiConfidence}%</span>
+              {liveCalls.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Radio className="w-8 h-8 text-slate-300" />
+                      <p className="font-semibold text-slate-700 text-sm">No live calls in progress</p>
+                      <p className="text-xs text-slate-400 max-w-sm">
+                        Active calls on public.calls with status = 'in_progress' will appear here automatically.
+                      </p>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <Link href={`/live-calls/${call.id}`}>
-                      <Button size="sm" className="h-7 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white">
-                        <span>Monitor Live</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </Button>
-                    </Link>
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                liveCalls.map((call) => (
+                  <tr key={call.id} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="font-semibold text-slate-900">{call.customerName}</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{call.customerPhone}</div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-medium">
+                        {call.appliance}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-slate-700 font-medium">{call.intent}</span>
+                    </td>
+                    <td className="px-5 py-3.5 max-w-xs truncate text-slate-800 font-normal">
+                      {call.issue}
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-slate-600 flex items-center gap-1.5 pt-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {call.duration}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <AIStateBadge state={call.aiState} />
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <PriorityBadge priority={call.priority} />
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                        <span>{call.aiConfidence}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <Link href={`/live-calls/${call.id}`}>
+                        <Button size="sm" className="h-7 text-xs gap-1 bg-blue-600 hover:bg-blue-700 text-white">
+                          <span>Monitor Live</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

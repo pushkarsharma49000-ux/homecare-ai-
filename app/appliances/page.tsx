@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Tv,
@@ -11,21 +11,44 @@ import {
   ShieldAlert,
   Wrench,
   RefreshCw,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { WarrantyBadge } from '@/components/ui/StatusBadge';
-import { mockAppliances } from '@/lib/mock-data/appliances';
-import { ApplianceType, ApplianceStatus } from '@/types';
+import { Appliance, ApplianceType } from '@/types';
+import { getAppliances } from '@/lib/services/appliances';
 
 export default function AppliancesPage() {
+  const [appliances, setAppliances] = useState<Appliance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
 
+  const fetchAppliances = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAppliances();
+      setAppliances(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load appliances');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppliances();
+  }, []);
+
   const filteredAppliances = useMemo(() => {
-    return mockAppliances.filter((app) => {
+    return appliances.filter((app) => {
       const matchesSearch =
         searchTerm === '' ||
         app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,7 +62,7 @@ export default function AppliancesPage() {
 
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [searchTerm, selectedType, selectedStatus]);
+  }, [appliances, searchTerm, selectedType, selectedStatus]);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -60,8 +83,18 @@ export default function AppliancesPage() {
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="px-3 py-1 text-xs">
-            {filteredAppliances.length} of {mockAppliances.length} Appliances Registered
+            {filteredAppliances.length} of {appliances.length} Appliances Registered
           </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAppliances}
+            disabled={loading}
+            className="text-xs h-8"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
       </div>
 
@@ -125,18 +158,38 @@ export default function AppliancesPage() {
 
       {/* Appliances Table (Section 18) */}
       <Card className="shadow-sm overflow-hidden">
-        {filteredAppliances.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center space-y-3">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+            <p className="text-xs text-slate-500">Querying Supabase appliance registry...</p>
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center space-y-3">
+            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+            <h3 className="text-sm font-semibold text-slate-800">Failed to load appliances</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchAppliances} className="text-xs mt-2">
+              Try Again
+            </Button>
+          </div>
+        ) : filteredAppliances.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
               <Tv className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">No appliances found</h3>
+            <h3 className="text-sm font-semibold text-slate-800">
+              {appliances.length === 0 ? 'No appliances in database' : 'No appliances match active filters'}
+            </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No registered appliances match your current search and filter selections.
+              {appliances.length === 0
+                ? 'Your Supabase appliances table currently has 0 rows. Run the seed script in Supabase to populate demo data.'
+                : 'No registered appliances match your current search and filter selections.'}
             </p>
-            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs mt-2">
-              Clear Filters
-            </Button>
+            {appliances.length > 0 && (
+              <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs mt-2">
+                Clear Filters
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

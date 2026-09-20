@@ -1,4 +1,7 @@
 import { ActionItem } from '@/types';
+import { supabase } from '@/lib/supabase/client';
+import { DbAction } from '@/types/supabase';
+import { mapDbActionToActionItem } from './adapters';
 
 /**
  * Action Engine Service Abstraction
@@ -8,7 +11,7 @@ import { ActionItem } from '@/types';
  * -> Action Engine executes business logic against Supabase / ERP / SMS Gateway
  * -> AI Agent receives execution confirmation and replies to caller.
  * 
- * Phase 1: Structured action dispatch contracts and UI metadata.
+ * Phase 2B: Structured action retrieval from Supabase `actions` table.
  */
 
 export type ActionType =
@@ -106,4 +109,83 @@ export const ACTION_CATALOG: Record<ActionType, ActionDefinition> = {
 
 export async function getActionCatalog(): Promise<ActionDefinition[]> {
   return Object.values(ACTION_CATALOG);
+}
+
+export async function getActions(): Promise<ActionItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('actions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching actions:', error.message);
+      return [];
+    }
+
+    return (data || []).map((a: DbAction) => mapDbActionToActionItem(a));
+  } catch (err) {
+    console.error('Unexpected error in getActions:', err);
+    return [];
+  }
+}
+
+export async function getActionsByCallId(callId: string): Promise<ActionItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('actions')
+      .select('*')
+      .eq('call_id', callId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching actions by call_id:', error.message);
+      return [];
+    }
+
+    return (data || []).map((a: DbAction) => mapDbActionToActionItem(a));
+  } catch (err) {
+    console.error('Unexpected error in getActionsByCallId:', err);
+    return [];
+  }
+}
+
+export async function getActionsByCustomerId(customerId: string): Promise<ActionItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('actions')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching actions by customer_id:', error.message);
+      return [];
+    }
+
+    return (data || []).map((a: DbAction) => mapDbActionToActionItem(a));
+  } catch (err) {
+    console.error('Unexpected error in getActionsByCustomerId:', err);
+    return [];
+  }
+}
+
+export async function getActionsByServiceRequestId(serviceRequestId: string): Promise<ActionItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('actions')
+      .select('*')
+      .eq('service_request_id', serviceRequestId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching actions by service_request_id:', error.message);
+      return [];
+    }
+
+    return (data || []).map((a: DbAction) => mapDbActionToActionItem(a));
+  } catch (err) {
+    console.error('Unexpected error in getActionsByServiceRequestId:', err);
+    return [];
+  }
 }

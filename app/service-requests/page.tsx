@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Wrench,
@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -21,24 +22,45 @@ import {
   RequestStatusBadge,
   PriorityBadge,
 } from '@/components/ui/StatusBadge';
-import { mockServiceRequests } from '@/lib/mock-data/service-requests';
-import { ServiceRequestStatus, CallPriority } from '@/types';
+import { ServiceRequest, ServiceRequestStatus, CallPriority } from '@/types';
+import { getServiceRequests } from '@/lib/services/service-requests';
 
 export default function ServiceRequestsPage() {
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [selectedPriority, setSelectedPriority] = useState<string>('All');
   const [selectedAppliance, setSelectedAppliance] = useState<string>('All');
 
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getServiceRequests();
+      setRequests(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load service requests');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
   // Top metric counters (Section 20)
-  const countNew = mockServiceRequests.filter((r) => r.status === 'New').length;
-  const countAssigned = mockServiceRequests.filter((r) => r.status === 'Assigned').length;
-  const countScheduled = mockServiceRequests.filter((r) => r.status === 'Technician Scheduled').length;
-  const countInProgress = mockServiceRequests.filter((r) => r.status === 'In Progress').length;
-  const countResolved = mockServiceRequests.filter((r) => r.status === 'Resolved').length;
+  const countNew = requests.filter((r) => r.status === 'New').length;
+  const countAssigned = requests.filter((r) => r.status === 'Assigned').length;
+  const countScheduled = requests.filter((r) => r.status === 'Technician Scheduled').length;
+  const countInProgress = requests.filter((r) => r.status === 'In Progress').length;
+  const countResolved = requests.filter((r) => r.status === 'Resolved').length;
 
   const filteredRequests = useMemo(() => {
-    return mockServiceRequests.filter((r) => {
+    return requests.filter((r) => {
       const matchesSearch =
         searchTerm === '' ||
         r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,7 +74,7 @@ export default function ServiceRequestsPage() {
 
       return matchesSearch && matchesStatus && matchesPriority && matchesAppliance;
     });
-  }, [searchTerm, selectedStatus, selectedPriority, selectedAppliance]);
+  }, [requests, searchTerm, selectedStatus, selectedPriority, selectedAppliance]);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -63,108 +85,68 @@ export default function ServiceRequestsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Service Requests</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Service Requests & Dispatch</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Dispatch pipeline and repair order tracking generated from AI inbound voice calls
+            Automated ticket pipeline created via inbound AI voice diagnostic workflows
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="px-3 py-1 text-xs">
-            {filteredRequests.length} of {mockServiceRequests.length} Total Tickets
+            {filteredRequests.length} of {requests.length} Requests
           </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchRequests}
+            disabled={loading}
+            className="text-xs h-8"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
       </div>
 
-      {/* Top Status Metrics (Section 20) */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <button
-          onClick={() => setSelectedStatus(selectedStatus === 'New' ? 'All' : 'New')}
-          className={`p-3.5 rounded-xl border text-left transition-all ${
-            selectedStatus === 'New'
-              ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-500/20 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">New</span>
-            <Clock className="w-4 h-4 text-sky-600" />
-          </div>
-          <p className="text-2xl font-bold text-sky-700 mt-1">{countNew}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Awaiting Assignment</p>
-        </button>
+      {/* Metric Cards Ribbon (Section 20) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <Card className="p-3.5 bg-blue-50/50 border-blue-100">
+          <span className="text-xs text-blue-700 font-medium">New / Unassigned</span>
+          <span className="text-2xl font-bold text-blue-900 mt-1 block">{countNew}</span>
+          <span className="text-[10px] text-blue-600 font-medium mt-0.5 block">Awaiting tech allocation</span>
+        </Card>
 
-        <button
-          onClick={() => setSelectedStatus(selectedStatus === 'Assigned' ? 'All' : 'Assigned')}
-          className={`p-3.5 rounded-xl border text-left transition-all ${
-            selectedStatus === 'Assigned'
-              ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Assigned</span>
-            <UserCheck className="w-4 h-4 text-indigo-600" />
-          </div>
-          <p className="text-2xl font-bold text-indigo-700 mt-1">{countAssigned}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Technician Allocated</p>
-        </button>
+        <Card className="p-3.5 bg-indigo-50/50 border-indigo-100">
+          <span className="text-xs text-indigo-700 font-medium">Technician Assigned</span>
+          <span className="text-2xl font-bold text-indigo-900 mt-1 block">{countAssigned}</span>
+          <span className="text-[10px] text-indigo-600 font-medium mt-0.5 block">Assigned to field team</span>
+        </Card>
 
-        <button
-          onClick={() => setSelectedStatus(selectedStatus === 'Technician Scheduled' ? 'All' : 'Technician Scheduled')}
-          className={`p-3.5 rounded-xl border text-left transition-all ${
-            selectedStatus === 'Technician Scheduled'
-              ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-500/20 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Scheduled</span>
-            <Calendar className="w-4 h-4 text-amber-600" />
-          </div>
-          <p className="text-2xl font-bold text-amber-700 mt-1">{countScheduled}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Time Slot Booked</p>
-        </button>
+        <Card className="p-3.5 bg-purple-50/50 border-purple-100">
+          <span className="text-xs text-purple-700 font-medium">Visit Scheduled</span>
+          <span className="text-2xl font-bold text-purple-900 mt-1 block">{countScheduled}</span>
+          <span className="text-[10px] text-purple-600 font-medium mt-0.5 block">Time slot confirmed</span>
+        </Card>
 
-        <button
-          onClick={() => setSelectedStatus(selectedStatus === 'In Progress' ? 'All' : 'In Progress')}
-          className={`p-3.5 rounded-xl border text-left transition-all ${
-            selectedStatus === 'In Progress'
-              ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-500/20 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">In Progress</span>
-            <Wrench className="w-4 h-4 text-orange-600" />
-          </div>
-          <p className="text-2xl font-bold text-orange-700 mt-1">{countInProgress}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Technician on Site</p>
-        </button>
+        <Card className="p-3.5 bg-amber-50/50 border-amber-100">
+          <span className="text-xs text-amber-700 font-medium">In Progress</span>
+          <span className="text-2xl font-bold text-amber-900 mt-1 block">{countInProgress}</span>
+          <span className="text-[10px] text-amber-600 font-medium mt-0.5 block">Active on-site inspection</span>
+        </Card>
 
-        <button
-          onClick={() => setSelectedStatus(selectedStatus === 'Resolved' ? 'All' : 'Resolved')}
-          className={`p-3.5 rounded-xl border text-left transition-all col-span-2 sm:col-span-1 ${
-            selectedStatus === 'Resolved'
-              ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500/20 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Resolved</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-2xl font-bold text-emerald-700 mt-1">{countResolved}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Signed Off by Client</p>
-        </button>
+        <Card className="p-3.5 bg-emerald-50/50 border-emerald-100">
+          <span className="text-xs text-emerald-700 font-medium">Resolved</span>
+          <span className="text-2xl font-bold text-emerald-900 mt-1 block">{countResolved}</span>
+          <span className="text-[10px] text-emerald-600 font-medium mt-0.5 block">Successfully repaired</span>
+        </Card>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter and Search Bar (Section 21) */}
       <Card className="p-4 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Search Input */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -172,13 +154,13 @@ export default function ServiceRequestsPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search Request ID (SR-...), customer name, technician, or issue..."
+              placeholder="Search request ID (SR-...), customer name, technician, or issue..."
               className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Status Dropdown */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status Filter */}
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
@@ -193,20 +175,20 @@ export default function ServiceRequestsPage() {
               <option value="Closed">Closed</option>
             </select>
 
-            {/* Priority Dropdown */}
+            {/* Priority Filter */}
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
               className="py-2 px-3 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-blue-500"
             >
               <option value="All">All Priorities</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
               <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
             </select>
 
-            {/* Appliance Dropdown */}
+            {/* Appliance Filter */}
             <select
               value={selectedAppliance}
               onChange={(e) => setSelectedAppliance(e.target.value)}
@@ -220,7 +202,10 @@ export default function ServiceRequestsPage() {
               <option value="Water Purifier">Water Purifier</option>
             </select>
 
-            {(searchTerm || selectedStatus !== 'All' || selectedPriority !== 'All' || selectedAppliance !== 'All') && (
+            {(searchTerm ||
+              selectedStatus !== 'All' ||
+              selectedPriority !== 'All' ||
+              selectedAppliance !== 'All') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -235,54 +220,81 @@ export default function ServiceRequestsPage() {
         </div>
       </Card>
 
-      {/* Service Requests Table (Section 20) */}
+      {/* Service Requests Table (Section 21) */}
       <Card className="shadow-sm overflow-hidden">
-        {filteredRequests.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center space-y-3">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+            <p className="text-xs text-slate-500">Querying Supabase service requests...</p>
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center space-y-3">
+            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+            <h3 className="text-sm font-semibold text-slate-800">Failed to load service requests</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchRequests} className="text-xs mt-2">
+              Try Again
+            </Button>
+          </div>
+        ) : filteredRequests.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
               <Wrench className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">No service requests found</h3>
+            <h3 className="text-sm font-semibold text-slate-800">
+              {requests.length === 0 ? 'No service requests in database' : 'No requests match active filters'}
+            </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No service orders match your selected filters. Reset filters to view all records.
+              {requests.length === 0
+                ? 'Your Supabase service_requests table currently has 0 rows. Run the seed script in Supabase to populate demo data.'
+                : 'No service requests found matching your query. Try resetting filters.'}
             </p>
-            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs mt-2">
-              Reset Filters
-            </Button>
+            {requests.length > 0 && (
+              <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs mt-2">
+                Clear Filters
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="px-5 py-3">Request ID</th>
+                  <th className="px-5 py-3">Request ID & Date</th>
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3">Appliance</th>
-                  <th className="px-5 py-3">Issue</th>
+                  <th className="px-5 py-3">Reported Issue</th>
                   <th className="px-5 py-3">Priority</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Assigned Technician</th>
-                  <th className="px-5 py-3">Created</th>
-                  <th className="px-5 py-3 text-right">View</th>
+                  <th className="px-5 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 {filteredRequests.map((sr) => (
                   <tr key={sr.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-3.5 font-mono font-semibold text-blue-600">
-                      <Link href={`/service-requests/${sr.id}`} className="hover:underline">
-                        {sr.id}
-                      </Link>
+                    <td className="px-5 py-3.5">
+                      <div className="font-mono font-semibold text-blue-600">
+                        <Link href={`/service-requests/${sr.id}`} className="hover:underline">
+                          {sr.id}
+                        </Link>
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono">{sr.created}</div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <div className="font-semibold text-slate-900">{sr.customerName}</div>
+                      <Link
+                        href={`/customers/${sr.customerId}`}
+                        className="font-semibold text-slate-900 hover:text-blue-600 hover:underline"
+                      >
+                        {sr.customerName}
+                      </Link>
                       <div className="text-[11px] text-slate-400 font-mono">{sr.customerPhone}</div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="font-medium text-slate-800">{sr.appliance}</span>
-                      <div className="text-[11px] text-slate-400 truncate max-w-[130px]">{sr.brand}</div>
+                      <div className="font-medium text-slate-900">{sr.appliance}</div>
+                      <div className="text-[11px] text-slate-400">{sr.brand} {sr.model}</div>
                     </td>
-                    <td className="px-5 py-3.5 max-w-xs truncate text-slate-800 font-normal">
+                    <td className="px-5 py-3.5 max-w-xs truncate text-slate-800">
                       {sr.issue}
                     </td>
                     <td className="px-5 py-3.5">
@@ -291,17 +303,16 @@ export default function ServiceRequestsPage() {
                     <td className="px-5 py-3.5">
                       <RequestStatusBadge status={sr.status} />
                     </td>
-                    <td className="px-5 py-3.5 text-slate-600">
+                    <td className="px-5 py-3.5">
                       {sr.assignedTechnician ? (
-                        <div className="flex items-center gap-1 font-medium text-slate-800">
-                          <UserCheck className="w-3 h-3 text-indigo-600" />
-                          <span className="truncate max-w-[130px]">{sr.assignedTechnician}</span>
+                        <div className="flex items-center gap-1.5 text-slate-800">
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="font-medium">{sr.assignedTechnician}</span>
                         </div>
                       ) : (
-                        <span className="text-slate-400 text-[11px] italic">Unassigned</span>
+                        <span className="text-slate-400 italic text-[11px]">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">{sr.created}</td>
                     <td className="px-5 py-3.5 text-right">
                       <Link href={`/service-requests/${sr.id}`}>
                         <Button variant="ghost" size="sm" className="h-7 px-2.5 text-blue-600 hover:text-blue-700">

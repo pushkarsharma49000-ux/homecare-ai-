@@ -21,8 +21,10 @@ import {
   mockAIQualityMetrics,
   mockOperationalMetrics,
 } from '@/lib/mock-data/analytics';
+import { getDashboardKPIs } from '@/lib/services/dashboard';
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const kpiData = await getDashboardKPIs();
   const maxDailyCalls = Math.max(...mockDailyCallVolume.map((d) => d.totalCalls));
 
   return (
@@ -49,17 +51,19 @@ export default function AnalyticsPage() {
         <Card className="p-3.5 shadow-subtle border-slate-200">
           <span className="text-[10px] uppercase font-semibold text-slate-400 block">Avg Handling Time</span>
           <span className="text-xl font-bold text-slate-900 font-mono mt-1 block">
-            {mockOperationalMetrics.averageHandlingTime}
+            {kpiData.totalCalls > 0 ? kpiData.avgCallDuration : mockOperationalMetrics.averageHandlingTime}
           </span>
-          <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">↓ 14s vs Target</span>
+          <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
+            {kpiData.totalCalls > 0 ? 'From Supabase' : '↓ 14s vs Target'}
+          </span>
         </Card>
 
         <Card className="p-3.5 shadow-subtle border-slate-200">
-          <span className="text-[10px] uppercase font-semibold text-slate-400 block">Avg Resolution Time</span>
-          <span className="text-xl font-bold text-slate-900 font-mono mt-1 block">
-            {mockOperationalMetrics.averageResolutionTime}
+          <span className="text-[10px] uppercase font-semibold text-slate-400 block">AI Resolution Rate</span>
+          <span className="text-xl font-bold text-emerald-600 font-mono mt-1 block">
+            {kpiData.totalCalls > 0 ? `${kpiData.aiResolutionRate}%` : mockOperationalMetrics.firstCallResolutionRate}
           </span>
-          <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">End-to-End Action</span>
+          <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">Autonomous resolution</span>
         </Card>
 
         <Card className="p-3.5 shadow-subtle border-slate-200">

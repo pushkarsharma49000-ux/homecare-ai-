@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -12,25 +12,49 @@ import {
   Wrench,
   Sparkles,
   RefreshCw,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { mockCustomers } from '@/lib/mock-data/customers';
+import { Customer } from '@/types';
+import { getCustomers } from '@/lib/services/customers';
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [cityFilter, setCityFilter] = useState<string>('All');
 
-  // Unique cities list for filtering
-  const cities = useMemo(() => {
-    const list = Array.from(new Set(mockCustomers.map((c) => c.city)));
-    return list.sort();
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getCustomers();
+      setCustomers(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load customers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
   }, []);
 
+  // Unique cities list for filtering
+  const cities = useMemo(() => {
+    const list = Array.from(new Set(customers.map((c) => c.city).filter(Boolean)));
+    return list.sort();
+  }, [customers]);
+
   const filteredCustomers = useMemo(() => {
-    return mockCustomers.filter((customer) => {
+    return customers.filter((customer) => {
       const matchesSearch =
         searchTerm === '' ||
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -46,7 +70,7 @@ export default function CustomersPage() {
 
       return matchesSearch && matchesStatus && matchesCity;
     });
-  }, [searchTerm, statusFilter, cityFilter]);
+  }, [customers, searchTerm, statusFilter, cityFilter]);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -67,8 +91,18 @@ export default function CustomersPage() {
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="px-3 py-1 text-xs">
-            {filteredCustomers.length} of {mockCustomers.length} Profiles
+            {filteredCustomers.length} of {customers.length} Profiles
           </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchCustomers}
+            disabled={loading}
+            className="text-xs h-8"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
       </div>
 
@@ -129,20 +163,40 @@ export default function CustomersPage() {
         </div>
       </Card>
 
-      {/* Customer Table (Section 16) */}
+      {/* Customer Table */}
       <Card className="shadow-sm overflow-hidden">
-        {filteredCustomers.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center space-y-3">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+            <p className="text-xs text-slate-500">Querying Supabase customer registry...</p>
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center space-y-3">
+            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+            <h3 className="text-sm font-semibold text-slate-800">Failed to load customers</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchCustomers} className="text-xs mt-2">
+              Try Again
+            </Button>
+          </div>
+        ) : filteredCustomers.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
               <Users className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">No customers found</h3>
+            <h3 className="text-sm font-semibold text-slate-800">
+              {customers.length === 0 ? 'No customer records in database' : 'No customers match active filters'}
+            </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No registered profiles match your active filters. Try adjusting your query.
+              {customers.length === 0
+                ? 'Your Supabase customers table currently has 0 rows. Run the seed script in Supabase to populate demo data.'
+                : 'No registered profiles match your search criteria. Try adjusting your query.'}
             </p>
-            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs mt-2">
-              Clear Filters
-            </Button>
+            {customers.length > 0 && (
+              <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs mt-2">
+                Clear Filters
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

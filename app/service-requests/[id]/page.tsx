@@ -190,7 +190,7 @@ export default async function ServiceRequestDetailPage({ params }: Props) {
                   </span>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm font-bold text-slate-900 font-mono">
-                      {sr.callId || 'CALL-83921'}
+                      {sr.callId || 'Direct Inbound'}
                     </span>
                     <span className="text-xs text-slate-400">•</span>
                     <span className="text-xs text-slate-500">Inbound Toll-Free (+91)</span>

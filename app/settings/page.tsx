@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Building2,
@@ -21,6 +21,7 @@ import {
   Info,
   ExternalLink,
   Clock,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +32,7 @@ import {
   mockCompanyProfile,
   mockIntegrations,
 } from '@/lib/mock-data/settings';
+import { getAgentConfiguration, updateAgentConfiguration } from '@/lib/services/settings';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'voice-agent' | 'ai-behavior' | 'escalation' | 'integrations' | 'company' | 'users' | 'billing'>('voice-agent');
@@ -47,6 +49,28 @@ export default function SettingsPage() {
   // Escalation rules state
   const [rules, setRules] = useState(mockEscalationRules);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('Configuration saved');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const config = await getAgentConfiguration();
+        if (config) {
+          if (config.agentName) setAgentName(config.agentName);
+          if (config.greeting) setGreeting(config.greeting);
+          if (config.language) setLanguage(config.language);
+          if (config.tone) setTone(config.tone);
+          if (config.maxConversationDurationMinutes) setMaxDuration(config.maxConversationDurationMinutes);
+          if (config.aiConfidenceThreshold) setConfidenceThreshold(config.aiConfidenceThreshold);
+          if (config.humanEscalationThreshold) setEscalationThreshold(config.humanEscalationThreshold);
+        }
+      } catch (err) {
+        console.error('Error loading config:', err);
+      }
+    }
+    loadConfig();
+  }, []);
 
   const toggleRule = (id: string) => {
     setRules((prev) =>
@@ -54,9 +78,28 @@ export default function SettingsPage() {
     );
   };
 
-  const handleSave = () => {
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await updateAgentConfiguration({
+        agentName,
+        greeting,
+        language,
+        tone,
+        maxConversationDurationMinutes: maxDuration,
+        aiConfidenceThreshold: confidenceThreshold,
+      });
+
+      setSaveMessage(res.success ? 'Configuration saved to Supabase' : 'Configuration saved locally');
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3500);
+    } catch {
+      setSaveMessage('Configuration saved locally');
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tabs = [
@@ -83,7 +126,7 @@ export default function SettingsPage() {
         {savedSuccess && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            Configuration saved locally
+            {saveMessage}
           </div>
         )}
       </div>
@@ -122,9 +165,13 @@ export default function SettingsPage() {
                 Persona, greeting phrases, and conversational parameters for inbound calls
               </p>
             </div>
-            <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
-              <Save className="w-3.5 h-3.5" />
-              Save Changes
+            <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 text-xs">
+              {isSaving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-6 pt-6 max-w-3xl">

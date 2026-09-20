@@ -168,44 +168,50 @@ export default async function CallDetailPage({ params }: Props) {
           </CardHeader>
 
           <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/40">
-            {call.transcript.map((msg) => {
-              const isAI = msg.speaker === 'ai';
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex items-start gap-3 ${isAI ? 'justify-start' : 'justify-start flex-row-reverse'}`}
-                >
+            {call.transcript.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">
+                <p className="text-xs">No transcript messages recorded for this call.</p>
+              </div>
+            ) : (
+              call.transcript.map((msg) => {
+                const isAI = msg.speaker === 'ai';
+                return (
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
-                      isAI
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-slate-800 text-white shadow-sm'
-                    }`}
+                    key={msg.id}
+                    className={`flex items-start gap-3 ${isAI ? 'justify-start' : 'justify-start flex-row-reverse'}`}
                   >
-                    {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                  </div>
-
-                  <div className={`max-w-[80%] ${isAI ? 'text-left' : 'text-right'}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[11px] font-semibold text-slate-700">
-                        {isAI ? 'HomeCare AI Voice Agent' : call.customerName}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">{msg.timestamp}</span>
-                    </div>
-
                     <div
-                      className={`p-3 rounded-xl text-xs leading-relaxed ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
                         isAI
-                          ? 'bg-blue-50 border border-blue-100 text-slate-800 rounded-tl-none'
-                          : 'bg-white border border-slate-200 text-slate-900 rounded-tr-none text-left shadow-subtle'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-slate-800 text-white shadow-sm'
                       }`}
                     >
-                      <p>"{msg.message}"</p>
+                      {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    </div>
+
+                    <div className={`max-w-[80%] ${isAI ? 'text-left' : 'text-right'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[11px] font-semibold text-slate-700">
+                          {isAI ? 'HomeCare AI Voice Agent' : call.customerName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">{msg.timestamp}</span>
+                      </div>
+
+                      <div
+                        className={`p-3 rounded-xl text-xs leading-relaxed ${
+                          isAI
+                            ? 'bg-blue-50 border border-blue-100 text-slate-800 rounded-tl-none'
+                            : 'bg-white border border-slate-200 text-slate-900 rounded-tr-none text-left shadow-subtle'
+                        }`}
+                      >
+                        <p>"{msg.message}"</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </Card>
 
@@ -262,30 +268,34 @@ export default async function CallDetailPage({ params }: Props) {
               </Badge>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="space-y-3">
-                {call.actionsTaken.map((action) => (
-                  <div
-                    key={action.id}
-                    className="flex items-start gap-2.5 text-xs p-2 rounded-lg bg-slate-50 border border-slate-200/60"
-                  >
-                    <div className="mt-0.5">
-                      {action.completed ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      ) : (
-                        <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-800">{action.description}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                        <span className="font-mono">{action.action}</span>
-                        <span>•</span>
-                        <span>{action.timestamp}</span>
+              {call.actionsTaken.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">No actions logged for this call.</p>
+              ) : (
+                <div className="space-y-3">
+                  {call.actionsTaken.map((action) => (
+                    <div
+                      key={action.id}
+                      className="flex items-start gap-2.5 text-xs p-2 rounded-lg bg-slate-50 border border-slate-200/60"
+                    >
+                      <div className="mt-0.5">
+                        {action.completed ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-800">{action.description}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                          <span className="font-mono">{action.action}</span>
+                          <span>•</span>
+                          <span>{action.timestamp}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
