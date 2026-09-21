@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search calls, customers (+91...), appliances..."
+              placeholder="Search sessions, customers, appliances..."
               className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
             />
           </div>
@@ -42,7 +42,7 @@ export const Header: React.FC = () => {
             </span>
             <span className="flex items-center gap-1.5">
               <PhoneCall className="w-3 h-3 text-emerald-600" />
-              <span>Browser Voice Agent: Ready</span>
+              <span>Browser Voice: Available</span>
             </span>
           </div>
 

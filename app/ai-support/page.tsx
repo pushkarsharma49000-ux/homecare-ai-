@@ -17,7 +17,7 @@ const initialMessages = [
   {
     id: 'prompt',
     role: 'user',
-    content: 'My AC is cooling poorly and I need help.',
+    content: 'My washing machine is making a very loud noise.',
   },
 ];
 

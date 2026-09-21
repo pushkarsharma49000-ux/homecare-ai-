@@ -31,8 +31,8 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { label: 'Live Calls', href: '/live-calls', icon: Radio, badge: '6 Live', badgeVariant: 'live' },
-  { label: 'Calls', href: '/calls', icon: PhoneCall },
+  { label: 'AI Sessions', href: '/live-calls', icon: Radio, badge: '6 Live', badgeVariant: 'live' },
+  { label: 'Session History', href: '/calls', icon: PhoneCall },
   { label: 'Customers', href: '/customers', icon: Users },
   { label: 'Appliances', href: '/appliances', icon: Tv },
   { label: 'Service Requests', href: '/service-requests', icon: Wrench, badge: '34' },
@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate max-w-[150px]">
-              Inbound Voice Support
+              AI Support Platform
             </p>
           </div>
         </Link>

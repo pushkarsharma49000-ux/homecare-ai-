@@ -120,7 +120,7 @@ export default async function Customer360Page({ params }: Props) {
               <div className="w-px h-8 bg-slate-200" />
               <div className="text-center px-3">
                 <span className="text-2xl font-bold text-slate-700">{calls.length}</span>
-                <span className="text-[11px] text-slate-500 block font-medium">Calls Logged</span>
+                <span className="text-[11px] text-slate-500 block font-medium">Sessions Logged</span>
               </div>
             </div>
           </div>
@@ -232,7 +232,7 @@ export default async function Customer360Page({ params }: Props) {
             <CardHeader className="border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <PhoneCall className="w-4 h-4 text-slate-500" />
-                <CardTitle className="text-sm">Customer Calls ({calls.length})</CardTitle>
+                <CardTitle className="text-sm">Customer Sessions ({calls.length})</CardTitle>
               </div>
               <Link href="/calls" className="text-xs text-blue-600 hover:underline">
                 All Calls →
@@ -240,7 +240,7 @@ export default async function Customer360Page({ params }: Props) {
             </CardHeader>
             <CardContent className="pt-3">
               {calls.length === 0 ? (
-                <p className="text-xs text-slate-400 p-4 text-center">No recent calls recorded</p>
+                <p className="text-xs text-slate-400 p-4 text-center">No recent sessions recorded</p>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {calls.map((c) => (

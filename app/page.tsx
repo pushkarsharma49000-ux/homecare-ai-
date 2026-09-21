@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
   const kpis = [
     {
-      title: 'Total Calls',
+      title: 'Total Sessions',
       value: kpiData.totalCalls.toString(),
       subtitle: kpiData.totalCallsSubtitle,
       icon: PhoneCall,
@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       icon: CheckCircle2,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      change: kpiData.totalCalls > 0 ? 'Autonomous resolutions' : 'Awaiting calls',
+      change: kpiData.totalCalls > 0 ? 'Autonomous resolutions' : 'Awaiting sessions',
     },
     {
       title: 'Service Requests',
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
       icon: Clock,
       color: 'text-amber-600',
       bg: 'bg-amber-50',
-      change: 'Calculated from calls',
+      change: 'Calculated from sessions',
     },
   ];
 
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                   <td colSpan={7} className="px-5 py-8 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Radio className="w-6 h-6 text-slate-300" />
-                      <p className="font-medium text-slate-600">No active live calls in progress</p>
+                      <p className="font-medium text-slate-600">No active AI sessions in progress</p>
                       <p className="text-xs text-slate-400">Active browser support sessions will appear here in real time.</p>
                     </div>
                   </td>
@@ -264,7 +264,7 @@ export default async function DashboardPage() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Wrench className="w-6 h-6 text-slate-300" />
                       <p className="font-medium text-slate-600">No service requests recorded</p>
-                      <p className="text-xs text-slate-400">Tickets generated from customer calls will be listed here.</p>
+                      <p className="text-xs text-slate-400">Tickets generated from customer support sessions will be listed here.</p>
                     </div>
                   </td>
                 </tr>

@@ -131,7 +131,7 @@ export default async function AnalyticsPage() {
                     {/* Tooltip on hover */}
                     <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-slate-900 text-white text-[10px] p-2 rounded shadow-lg whitespace-nowrap">
                       <p className="font-bold">{item.date} ({item.day})</p>
-                      <p className="text-blue-300">Total: {item.totalCalls} calls</p>
+                      <p className="text-blue-300">Total: {item.totalCalls} sessions</p>
                       <p className="text-emerald-300">AI Resolved: {item.aiResolved}</p>
                       <p className="text-rose-300">Escalated: {item.escalated}</p>
                     </div>
@@ -207,7 +207,7 @@ export default async function AnalyticsPage() {
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
                   Resolved by AI
                 </span>
-                <span className="font-bold text-blue-900">82.3% (121 calls)</span>
+                <span className="font-bold text-blue-900">82.3% (121 sessions)</span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-rose-50/70 border border-rose-100">
@@ -215,7 +215,7 @@ export default async function AnalyticsPage() {
                   <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
                   Human Escalation
                 </span>
-                <span className="font-bold text-rose-900">17.7% (26 calls)</span>
+                <span className="font-bold text-rose-900">17.7% (26 sessions)</span>
               </div>
             </div>
           </CardContent>
@@ -238,7 +238,7 @@ export default async function AnalyticsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-800">{item.appliance}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{item.count} calls</span>
+                    <span className="font-bold text-slate-900">{item.count} sessions</span>
                     <span className="text-slate-400 font-normal">({item.percentage}%)</span>
                   </div>
                 </div>
@@ -267,7 +267,7 @@ export default async function AnalyticsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-800">{prob.issue}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{prob.count} calls</span>
+                    <span className="font-bold text-slate-900">{prob.count} sessions</span>
                     <span className="text-slate-400 font-normal">({prob.percentage}%)</span>
                   </div>
                 </div>

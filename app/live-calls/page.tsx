@@ -47,7 +47,7 @@ export default async function LiveCallsPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
             </span>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Live Support Monitoring Center</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">AI Sessions Monitoring Center</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
             Real-time supervisor cockpit for active browser-based support sessions
@@ -67,7 +67,7 @@ export default async function LiveCallsPage() {
         <Card className="border-l-4 border-l-blue-600">
           <div className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-500">Active Inbound Calls</p>
+              <p className="text-xs font-medium text-slate-500">Active AI Sessions</p>
               <p className="text-2xl font-bold text-slate-900 mt-1">{totalActive}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">Live browser sessions</p>
             </div>
@@ -117,14 +117,14 @@ export default async function LiveCallsPage() {
         </Card>
       </div>
 
-      {/* Live Calls Table */}
+      {/* AI Sessions Table */}
       <Card className="shadow-sm">
         <CardHeader className="border-b border-slate-100">
           <div>
-            <CardTitle className="text-base">Active Calls Stream</CardTitle>
+            <CardTitle className="text-base">Active AI Sessions Stream</CardTitle>
             <p className="text-xs text-slate-500">Click any call to open real-time transcript and AI reasoning drawer</p>
           </div>
-          <Badge variant="secondary">{liveCalls.length} Channels Active</Badge>
+              <Badge variant="secondary">{liveCalls.length} Sessions Active</Badge>
         </CardHeader>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -144,12 +144,12 @@ export default async function LiveCallsPage() {
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {liveCalls.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Radio className="w-8 h-8 text-slate-300" />
-                      <p className="font-semibold text-slate-700 text-sm">No live calls in progress</p>
+                      <p className="font-semibold text-slate-700 text-sm">No AI sessions in progress</p>
                       <p className="text-xs text-slate-400 max-w-sm">
-                        Active calls on public.calls with status = 'in_progress' will appear here automatically.
+                        Active browser support sessions will appear here automatically.
                       </p>
                     </div>
                   </td>

@@ -162,7 +162,7 @@ export default function SettingsPage() {
             <div>
               <CardTitle>Inbound Voice Agent Configuration</CardTitle>
               <p className="text-xs text-slate-500">
-                Persona, greeting phrases, and conversational parameters for inbound calls
+                Persona, greeting phrases, and conversational parameters for AI support sessions
               </p>
             </div>
             <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 text-xs">
@@ -185,13 +185,13 @@ export default function SettingsPage() {
                 className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <p className="text-[11px] text-slate-400">
-                Announced to customers during inbound call connection.
+                Shown when a customer starts an AI support session.
               </p>
             </div>
 
             {/* Inbound Greeting */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800">Inbound Call Greeting</label>
+              <label className="text-xs font-bold text-slate-800">Support Session Greeting</label>
               <textarea
                 rows={3}
                 value={greeting}
