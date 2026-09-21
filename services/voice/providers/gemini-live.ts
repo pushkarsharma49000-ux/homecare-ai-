@@ -7,6 +7,7 @@ import type {
   VoiceAudioOutput,
   VoiceConnectionState,
   VoiceProvider,
+  VoiceProviderConnectOptions,
   VoiceProviderEvent,
 } from '@/services/voice/types';
 
@@ -37,12 +38,16 @@ export class GeminiLiveProvider implements VoiceProvider {
   private listeners = new Set<(event: VoiceProviderEvent) => void>();
   private connection: VoiceConnectionState = 'disconnected';
 
-  async connect(): Promise<void> {
+  async connect(options?: VoiceProviderConnectOptions): Promise<void> {
     if (this.connection === 'connected' || this.connection === 'connecting') return;
     this.setConnection('connecting');
 
     try {
-      const response = await fetch('/api/voice/session', { method: 'POST' });
+      const response = await fetch('/api/voice/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemContext: options?.systemContext }),
+      });
       if (!response.ok) throw new Error('Voice session could not be created.');
       const { token, model } = (await response.json()) as { token?: string; model?: string };
       if (!token || !model) throw new Error('Voice session configuration is incomplete.');

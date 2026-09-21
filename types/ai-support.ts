@@ -32,6 +32,56 @@ export type MicrophonePermissionState = 'unknown' | 'prompt' | 'granted' | 'deni
 
 export type AudioSessionState = 'idle' | 'requesting' | 'ready' | 'listening' | 'error' | 'closed';
 
+export type ConversationStage =
+  | 'GREETING'
+  | 'IDENTIFYING_APPLIANCE'
+  | 'UNDERSTANDING_ISSUE'
+  | 'DIAGNOSING'
+  | 'TROUBLESHOOTING'
+  | 'RECOMMENDING_ACTION'
+  | 'READY_FOR_SERVICE'
+  | 'COMPLETED';
+
+export interface CustomerContext {
+  name: string | null;
+  customerId: string | null;
+}
+
+export interface ApplianceContext {
+  applianceId: string | null;
+  brand: string | null;
+  model: string | null;
+  category: string | null;
+  warrantyStatus: string | null;
+}
+
+export interface IssueContext {
+  category: string | null;
+  description: string | null;
+  symptoms: string[];
+}
+
+export interface DiagnosisContext {
+  suspectedIssue: string | null;
+  confidence: number | null;
+}
+
+export interface RecommendedAction {
+  type: 'TROUBLESHOOT' | 'MONITOR' | 'TECHNICIAN_SERVICE' | 'SAFETY_ESCALATION' | null;
+  description: string | null;
+  requiresTechnician: boolean | null;
+}
+
+export interface ConversationContext {
+  customer: CustomerContext;
+  appliance: ApplianceContext;
+  issue: IssueContext;
+  diagnosis: DiagnosisContext;
+  recommendedAction: RecommendedAction;
+  stage: ConversationStage;
+  isDemoContext?: boolean;
+}
+
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
 export interface ConversationMessage {
@@ -52,6 +102,7 @@ export interface ConversationSession {
   updatedAt: string;
   messages: ConversationMessage[];
   context?: Record<string, unknown>;
+  supportContext?: ConversationContext;
 }
 
 export interface VoiceSession {

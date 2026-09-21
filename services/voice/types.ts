@@ -37,11 +37,15 @@ export type VoiceProviderEvent =
   | { type: 'closed' };
 
 export interface VoiceProvider {
-  connect(): Promise<void>;
+  connect(options?: VoiceProviderConnectOptions): Promise<void>;
   sendAudio(input: VoiceAudioInput): void;
   interrupt(): void;
   close(): void;
   subscribe(listener: (event: VoiceProviderEvent) => void): () => void;
+}
+
+export interface VoiceProviderConnectOptions {
+  systemContext?: string;
 }
 
 export interface VoicePlayback {

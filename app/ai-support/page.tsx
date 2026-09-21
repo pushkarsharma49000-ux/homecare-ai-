@@ -8,6 +8,8 @@ import { BrowserVoiceService, voiceStateLabels } from '@/services/voice';
 import { GeminiLiveProvider } from '@/services/voice/providers/gemini-live';
 import type { VoiceTranscriptEvent } from '@/services/voice/types';
 import type { VoiceServiceStatus, VoiceState } from '@/types/ai-support';
+import { ConversationOrchestrator, createConversationContext } from '@/services/conversation';
+import type { ConversationStage } from '@/types/ai-support';
 
 const initialMessages = [
   {
@@ -35,13 +37,32 @@ export default function AISupportPage() {
   const [amplitude, setAmplitude] = useState(0);
   const [userTranscript, setUserTranscript] = useState('');
   const [assistantTranscript, setAssistantTranscript] = useState('');
+  const [conversationStage, setConversationStage] = useState<ConversationStage>('GREETING');
   const voiceServiceRef = useRef<BrowserVoiceService>();
   const providerRef = useRef<GeminiLiveProvider>();
+  const orchestratorRef = useRef<ConversationOrchestrator>();
 
   if (!voiceServiceRef.current) voiceServiceRef.current = new BrowserVoiceService();
   if (!providerRef.current) providerRef.current = new GeminiLiveProvider();
+  if (!orchestratorRef.current) {
+    orchestratorRef.current = new ConversationOrchestrator({
+      context: createConversationContext({
+        customer: { name: 'Rahul Sharma', customerId: null },
+        appliance: {
+          applianceId: null,
+          brand: 'Samsung',
+          model: '8kg Front Load Washer',
+          category: 'Washing Machine',
+          warrantyStatus: null,
+        },
+        isDemoContext: true,
+      }),
+      onEvent: (event) => setConversationStage(event.stage),
+    });
+  }
   const voiceService = voiceServiceRef.current;
   const provider = providerRef.current;
+  const orchestrator = orchestratorRef.current;
 
   useEffect(() => {
     const updateStatus = () => setVoiceStatus(voiceService.getStatus());
@@ -53,6 +74,7 @@ export default function AISupportPage() {
     const unsubscribeTranscript = voiceService.subscribeTranscript((event: VoiceTranscriptEvent) => {
       if (event.kind.startsWith('USER_')) setUserTranscript(event.text);
       if (event.kind.startsWith('ASSISTANT_')) setAssistantTranscript(event.text);
+      setConversationStage(orchestrator.handleTranscript(event).stage);
     });
     const unsubscribeStatus = voiceService.subscribeStatus(updateStatus);
     voiceService.attachProvider(provider);
@@ -65,7 +87,7 @@ export default function AISupportPage() {
       unsubscribeStatus();
       void voiceService.disconnect();
     };
-  }, [provider, voiceService]);
+  }, [orchestrator, provider, voiceService]);
 
   const statusTone = useMemo(() => {
     switch (voiceState) {
@@ -104,6 +126,7 @@ export default function AISupportPage() {
     if (voiceStatus.audioSession === 'listening') {
       await voiceService.stopListening();
     } else {
+      await voiceService.connectProvider({ systemContext: orchestrator.buildSystemContext() });
       await voiceService.startListening();
     }
     setVoiceStatus(voiceService.getStatus());
@@ -244,6 +267,10 @@ export default function AISupportPage() {
               <div>
                 <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Status</p>
                 <p className="mt-1 font-medium text-slate-800">Troubleshooting in progress</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Conversation stage</p>
+                <p className="mt-1 font-medium text-slate-800">{conversationStage.replaceAll('_', ' ')}</p>
               </div>
             </CardContent>
           </Card>

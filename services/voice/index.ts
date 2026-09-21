@@ -10,7 +10,7 @@ import {
   VoiceState,
   VoiceServiceStatus,
 } from '@/types/ai-support';
-import type { VoiceAudioInput, VoiceAudioOutput, VoiceConnectionState, VoiceProvider, VoiceProviderEvent, VoiceTranscriptEvent } from '@/services/voice/types';
+import type { VoiceAudioInput, VoiceAudioOutput, VoiceConnectionState, VoiceProvider, VoiceProviderEvent, VoiceProviderConnectOptions, VoiceTranscriptEvent } from '@/services/voice/types';
 
 export interface VoiceService {
   createSession(conversationSessionId?: string): Promise<VoiceSession>;
@@ -321,9 +321,9 @@ export class BrowserVoiceService implements VoiceService {
     this.providerUnsubscribe = provider.subscribe((event) => this.handleProviderEvent(event));
   }
 
-  async connectProvider(): Promise<void> {
+  async connectProvider(options?: VoiceProviderConnectOptions): Promise<void> {
     if (!this.provider || this.connectionState === 'connected' || this.connectionState === 'connecting') return;
-    await this.provider.connect();
+    await this.provider.connect(options);
   }
 
   async enqueueAudioOutput(output: VoiceAudioOutput): Promise<void> {
