@@ -148,6 +148,12 @@ export interface RAGQuery {
   sessionId?: string;
   customerId?: string;
   applianceId?: string;
+  applianceType?: string;
+  brand?: string;
+  model?: string;
+  category?: string;
+  topK?: number;
+  similarityThreshold?: number;
   filters?: Record<string, unknown>;
 }
 
@@ -160,6 +166,13 @@ export interface RAGResult {
   title?: string;
   excerpt?: string;
   documentId?: string;
+  chunkId?: string;
+  similarity?: number;
+  documentTitle?: string;
+  applianceType?: string | null;
+  category?: string | null;
+  sourceUrl?: string | null;
+  metadata?: Record<string, unknown> | null;
   status: 'ready' | 'not_implemented' | 'error';
 }
 

@@ -1,28 +1,50 @@
-import { RAGQuery, RAGResult } from '@/types/ai-support';
+import { getServerSupabase } from '@/lib/supabase/server';
+import type { RAGQuery, RAGResult } from '@/types/ai-support';
+import type { RAGQueryService, KnowledgeChunkMatch } from '@/services/rag/types';
+import type { EmbeddingProvider } from '@/services/rag/embeddings/provider';
 
-export interface RAGService {
-  query(request: RAGQuery): Promise<RAGResult>;
+export interface RAGService extends RAGQueryService {
   getContextSummary(sessionId: string): Promise<string[]>;
 }
 
-export class PlaceholderRAGService implements RAGService {
-  async query(request: RAGQuery): Promise<RAGResult> {
-    return {
-      id: `rag-result-${Date.now()}`,
+export class SupabaseRAGService implements RAGService {
+  constructor(private readonly embeddingProvider: EmbeddingProvider) {}
+
+  async query(request: RAGQuery): Promise<RAGResult[]> {
+    if (!request.query.trim()) return [];
+    const queryEmbedding = await this.embeddingProvider.embedText(request.query, { purpose: 'query' });
+    const supabase = getServerSupabase();
+    const { data, error } = await supabase.rpc('match_knowledge_chunks', {
+      query_embedding: queryEmbedding.embedding,
+      match_threshold: request.similarityThreshold ?? 0.7,
+      match_count: Math.min(Math.max(request.topK ?? 8, 1), 50),
+      filter_appliance_type: request.applianceType ?? null,
+      filter_category: request.category ?? null,
+    });
+    if (error) throw new Error('Knowledge retrieval failed.');
+
+    return ((data ?? []) as KnowledgeChunkMatch[]).map((match) => ({
+      id: `rag-result-${match.chunkId}`,
       queryId: request.id,
-      content:
-        'RAG is not implemented in this phase. This service will be connected to appliance knowledge, troubleshooting docs, and policy content in a later stage.',
-      source: 'placeholder-rag-service',
-      confidence: 0,
-      title: 'RAG placeholder',
-      excerpt: 'Future retrieval layer for troubleshooting and service guidance.',
-      status: 'not_implemented',
-    };
+      chunkId: match.chunkId,
+      documentId: match.documentId,
+      content: match.content,
+      similarity: match.similarity,
+      confidence: match.similarity,
+      source: match.sourceUrl || match.documentTitle,
+      title: match.documentTitle,
+      documentTitle: match.documentTitle,
+      excerpt: match.content.slice(0, 240),
+      applianceType: match.applianceType,
+      category: match.category,
+      sourceUrl: match.sourceUrl,
+      metadata: match.metadata,
+      status: 'ready',
+    }));
   }
 
   async getContextSummary(_sessionId: string): Promise<string[]> {
-    return ['Customer and appliance context is preserved for future retrieval.'];
+    return [];
   }
 }
 
-export const ragService = new PlaceholderRAGService();
