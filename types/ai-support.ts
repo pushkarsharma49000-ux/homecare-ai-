@@ -71,6 +71,7 @@ export interface VoiceServiceStatus {
   microphonePermission: MicrophonePermissionState;
   audioSession: AudioSessionState;
   browserSupported: boolean;
+  connectionState?: 'disconnected' | 'connecting' | 'connected' | 'closing' | 'error';
   errorMessage?: string;
 }
 

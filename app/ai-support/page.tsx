@@ -5,6 +5,8 @@ import { ArrowUp, Mic, MessageSquareText, ShieldCheck, CalendarCheck2, MicOff } 
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { BrowserVoiceService, voiceStateLabels } from '@/services/voice';
+import { GeminiLiveProvider } from '@/services/voice/providers/gemini-live';
+import type { VoiceTranscriptEvent } from '@/services/voice/types';
 import type { VoiceServiceStatus, VoiceState } from '@/types/ai-support';
 
 const initialMessages = [
@@ -31,10 +33,15 @@ export default function AISupportPage() {
     browserSupported: true,
   });
   const [amplitude, setAmplitude] = useState(0);
+  const [userTranscript, setUserTranscript] = useState('');
+  const [assistantTranscript, setAssistantTranscript] = useState('');
   const voiceServiceRef = useRef<BrowserVoiceService>();
+  const providerRef = useRef<GeminiLiveProvider>();
 
   if (!voiceServiceRef.current) voiceServiceRef.current = new BrowserVoiceService();
+  if (!providerRef.current) providerRef.current = new GeminiLiveProvider();
   const voiceService = voiceServiceRef.current;
+  const provider = providerRef.current;
 
   useEffect(() => {
     const updateStatus = () => setVoiceStatus(voiceService.getStatus());
@@ -43,14 +50,22 @@ export default function AISupportPage() {
       updateStatus();
     });
     const unsubscribeAmplitude = voiceService.subscribeAmplitude(setAmplitude);
+    const unsubscribeTranscript = voiceService.subscribeTranscript((event: VoiceTranscriptEvent) => {
+      if (event.kind.startsWith('USER_')) setUserTranscript(event.text);
+      if (event.kind.startsWith('ASSISTANT_')) setAssistantTranscript(event.text);
+    });
+    const unsubscribeStatus = voiceService.subscribeStatus(updateStatus);
+    voiceService.attachProvider(provider);
     updateStatus();
 
     return () => {
       unsubscribeVoice();
       unsubscribeAmplitude();
+      unsubscribeTranscript();
+      unsubscribeStatus();
       void voiceService.disconnect();
     };
-  }, [voiceService]);
+  }, [provider, voiceService]);
 
   const statusTone = useMemo(() => {
     switch (voiceState) {
@@ -158,6 +173,8 @@ export default function AISupportPage() {
                   </div>
                 </div>
               ))}
+              {userTranscript && <p className="text-xs italic text-slate-500">You: {userTranscript}</p>}
+              {assistantTranscript && <p className="text-xs italic text-blue-700">AI: {assistantTranscript}</p>}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-3">
