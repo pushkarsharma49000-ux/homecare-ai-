@@ -6,13 +6,18 @@ import type { EmbeddingResult } from '@/services/rag/types';
 const DOCUMENT_TASK = 'RETRIEVAL_DOCUMENT';
 const QUERY_TASK = 'RETRIEVAL_QUERY';
 
+export function validateEmbeddingDimension(values: readonly number[], expectedDimension: number): void {
+  if (values.length !== expectedDimension) {
+    throw new Error(`Embedding must contain exactly ${expectedDimension} values.`);
+  }
+  if (values.some((value) => !Number.isFinite(value))) throw new Error('Embedding contains invalid values.');
+}
+
 export function normalizeEmbedding(values: readonly number[], expectedDimension: number): number[] {
   if (!Number.isInteger(expectedDimension) || expectedDimension <= 0) {
     throw new Error('Embedding dimension must be a positive integer.');
   }
-  if (values.length !== expectedDimension || values.some((value) => !Number.isFinite(value))) {
-    throw new Error('Embedding provider returned an invalid vector.');
-  }
+  validateEmbeddingDimension(values, expectedDimension);
 
   const magnitude = Math.sqrt(values.reduce((sum, value) => sum + value * value, 0));
   if (!Number.isFinite(magnitude) || magnitude <= Number.EPSILON) {
@@ -33,9 +38,8 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     if (!apiKey) throw new Error('Embedding provider is not configured.');
     this.model = process.env.GEMINI_EMBEDDING_MODEL || RAG_EMBEDDING_MODEL;
     this.dimension = Number(process.env.GEMINI_EMBEDDING_DIMENSION || RAG_EMBEDDING_DIMENSION);
-    if (this.model === RAG_EMBEDDING_MODEL && this.dimension !== RAG_EMBEDDING_DIMENSION) {
-      throw new Error(`Embedding dimension must be ${RAG_EMBEDDING_DIMENSION} for ${RAG_EMBEDDING_MODEL}.`);
-    }
+    if (this.model !== RAG_EMBEDDING_MODEL) throw new Error(`Embedding model must be ${RAG_EMBEDDING_MODEL}.`);
+    if (this.dimension !== RAG_EMBEDDING_DIMENSION) throw new Error(`Embedding dimension must be ${RAG_EMBEDDING_DIMENSION} for ${RAG_EMBEDDING_MODEL}.`);
     if (!Number.isInteger(this.dimension) || this.dimension <= 0) throw new Error('Embedding dimension is invalid.');
     this.client = new GoogleGenAI({ apiKey });
   }

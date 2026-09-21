@@ -16,15 +16,28 @@ function splitIntoWords(text: string): string[] {
   return text.trim().split(/\s+/).filter(Boolean);
 }
 
+export function cleanDocumentContent(content: string): string {
+  return content
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function chunkDocument(content: string, options: ChunkingOptions = {}): ChunkInput[] {
   const configuredTarget = Number(process.env.RAG_CHUNK_TARGET_TOKENS);
   const configuredOverlap = Number(process.env.RAG_CHUNK_OVERLAP_TOKENS);
   const targetTokens = Math.max(100, options.targetTokens ?? (Number.isFinite(configuredTarget) && configuredTarget > 0 ? configuredTarget : DEFAULT_TARGET_TOKENS));
   const overlapTokens = Math.max(0, Math.min(targetTokens - 1, options.overlapTokens ?? (Number.isFinite(configuredOverlap) && configuredOverlap >= 0 ? configuredOverlap : DEFAULT_OVERLAP_TOKENS)));
-  const paragraphs = content
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+    const cleanedContent = cleanDocumentContent(content);
+    if (!cleanedContent) return [];
+    const paragraphs = cleanedContent
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
   const chunks: ChunkInput[] = [];
   let current: string[] = [];
 

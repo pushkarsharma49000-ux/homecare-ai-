@@ -18,7 +18,9 @@ export interface ChunkInput {
 export interface IngestionResult {
   documentId: string;
   chunkCount: number;
+  chunksCreated: number;
   embeddingCount: number;
+  embeddingDimensions: number;
   embeddingModel: string;
   status: 'completed' | 'failed';
 }

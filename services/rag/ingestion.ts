@@ -4,7 +4,24 @@ import type { IngestionResult } from '@/services/rag/types';
 import type { EmbeddingProvider } from '@/services/rag/embeddings/provider';
 import type { DbKnowledgeDocument } from '@/types/supabase';
 
+export type IngestionErrorCode = 'INVALID_DOCUMENT_ID' | 'DOCUMENT_NOT_FOUND' | 'DOCUMENT_INACTIVE' | 'EMPTY_CONTENT' | 'EMBEDDING_FAILED' | 'DATABASE_FAILED';
+
+export class KnowledgeIngestionError extends Error {
+  constructor(public readonly code: IngestionErrorCode, message: string) {
+    super(message);
+    this.name = 'KnowledgeIngestionError';
+  }
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidDocumentId(documentId: string): boolean {
+  return UUID_PATTERN.test(documentId);
+}
+
 export async function ingestKnowledgeDocument(documentId: string, embeddingProvider: EmbeddingProvider): Promise<IngestionResult> {
+  if (!isValidDocumentId(documentId)) throw new KnowledgeIngestionError('INVALID_DOCUMENT_ID', 'documentId must be a valid UUID.');
+
   const supabase = getServerSupabase();
   const { data: document, error: documentError } = await supabase
     .from('knowledge_documents')
@@ -12,15 +29,27 @@ export async function ingestKnowledgeDocument(documentId: string, embeddingProvi
     .eq('id', documentId)
     .maybeSingle<Pick<DbKnowledgeDocument, 'id' | 'title' | 'category' | 'appliance_type' | 'description' | 'content' | 'source_url' | 'status'>>();
 
-  if (documentError) throw new Error('Knowledge document could not be loaded.');
-  if (!document?.content?.trim()) throw new Error('Knowledge document has no content to ingest.');
+  if (documentError) throw new KnowledgeIngestionError('DATABASE_FAILED', 'Knowledge document could not be loaded.');
+  if (!document) throw new KnowledgeIngestionError('DOCUMENT_NOT_FOUND', 'Knowledge document was not found.');
+  if (document.status !== 'active') {
+  throw new KnowledgeIngestionError(
+    'DOCUMENT_INACTIVE',
+    'Only active knowledge documents can be ingested.'
+  );
+}
+  if (!document.content?.trim()) throw new KnowledgeIngestionError('EMPTY_CONTENT', 'Knowledge document has no content to ingest.');
 
   const chunks = chunkDocument(document.content);
-  if (!chunks.length) throw new Error('Knowledge document produced no chunks.');
-  const embeddings = await embeddingProvider.embedTexts(chunks.map((chunk) => chunk.content), { purpose: 'document' });
-
-  const { error: deleteError } = await supabase.from('knowledge_chunks').delete().eq('document_id', documentId);
-  if (deleteError) throw new Error('Existing knowledge chunks could not be reconciled.');
+  if (!chunks.length) throw new KnowledgeIngestionError('EMPTY_CONTENT', 'Knowledge document has no usable content to ingest.');
+  let embeddings;
+  try {
+    embeddings = await embeddingProvider.embedTexts(chunks.map((chunk) => chunk.content), { purpose: 'document' });
+  } catch {
+    throw new KnowledgeIngestionError('EMBEDDING_FAILED', 'Knowledge document embeddings could not be generated.');
+  }
+  if (embeddings.length !== chunks.length || embeddings.some((embedding) => embedding.dimension !== embeddingProvider.dimension || embedding.embedding.length !== embeddingProvider.dimension)) {
+    throw new KnowledgeIngestionError('EMBEDDING_FAILED', 'Generated embeddings failed the configured dimension check.');
+  }
 
   const rows = chunks.map((chunk, index) => ({
     document_id: documentId,
@@ -36,13 +65,24 @@ export async function ingestKnowledgeDocument(documentId: string, embeddingProvi
       source_url: document.source_url,
     },
   }));
-  const { error: insertError } = await supabase.from('knowledge_chunks').insert(rows);
-  if (insertError) throw new Error('Knowledge chunks could not be stored.');
+  const { error: upsertError } = await supabase
+    .from('knowledge_chunks')
+    .upsert(rows, { onConflict: 'document_id,chunk_index' });
+  if (upsertError) throw new KnowledgeIngestionError('DATABASE_FAILED', 'Knowledge chunks could not be stored.');
+
+  const { error: staleChunkError } = await supabase
+    .from('knowledge_chunks')
+    .delete()
+    .eq('document_id', documentId)
+    .gte('chunk_index', rows.length);
+  if (staleChunkError) throw new KnowledgeIngestionError('DATABASE_FAILED', 'Stale knowledge chunks could not be reconciled.');
 
   return {
     documentId,
     chunkCount: chunks.length,
+    chunksCreated: rows.length,
     embeddingCount: embeddings.length,
+    embeddingDimensions: embeddingProvider.dimension,
     embeddingModel: embeddingProvider.model,
     status: 'completed',
   };
