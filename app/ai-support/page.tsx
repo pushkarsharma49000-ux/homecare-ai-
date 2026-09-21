@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { ArrowUp, Mic, Sparkles, MessageSquareText, ShieldCheck, CalendarCheck2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUp, Mic, MessageSquareText, ShieldCheck, CalendarCheck2, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { voiceStateLabels, transitionVoiceState } from '@/services/voice';
-import type { VoiceEventType, VoiceState } from '@/types/ai-support';
+import { BrowserVoiceService, voiceStateLabels } from '@/services/voice';
+import type { VoiceServiceStatus, VoiceState } from '@/types/ai-support';
 
 const initialMessages = [
   {
@@ -25,6 +25,32 @@ export default function AISupportPage() {
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
+  const [voiceStatus, setVoiceStatus] = useState<VoiceServiceStatus>({
+    microphonePermission: 'unknown',
+    audioSession: 'idle',
+    browserSupported: true,
+  });
+  const [amplitude, setAmplitude] = useState(0);
+  const voiceServiceRef = useRef<BrowserVoiceService>();
+
+  if (!voiceServiceRef.current) voiceServiceRef.current = new BrowserVoiceService();
+  const voiceService = voiceServiceRef.current;
+
+  useEffect(() => {
+    const updateStatus = () => setVoiceStatus(voiceService.getStatus());
+    const unsubscribeVoice = voiceService.subscribe((event) => {
+      setVoiceState(event.state);
+      updateStatus();
+    });
+    const unsubscribeAmplitude = voiceService.subscribeAmplitude(setAmplitude);
+    updateStatus();
+
+    return () => {
+      unsubscribeVoice();
+      unsubscribeAmplitude();
+      void voiceService.disconnect();
+    };
+  }, [voiceService]);
 
   const statusTone = useMemo(() => {
     switch (voiceState) {
@@ -59,14 +85,27 @@ export default function AISupportPage() {
     setVoiceState('PROCESSING');
   };
 
-  const handleVoiceAction = (eventType: VoiceEventType) => {
-    const next = transitionVoiceState(voiceState, eventType).nextState;
-    setVoiceState(next);
-
-    if (eventType === 'USER_SPEECH_DETECTED') {
-      setVoiceState('INTERRUPTED');
+  const handleVoiceAction = async () => {
+    if (voiceStatus.audioSession === 'listening') {
+      await voiceService.stopListening();
+    } else {
+      await voiceService.startListening();
     }
+    setVoiceStatus(voiceService.getStatus());
   };
+
+  const microphoneLabel = !voiceStatus.browserSupported
+    ? 'Microphone unavailable'
+    : voiceStatus.microphonePermission === 'denied'
+    ? 'Permission required'
+    : voiceStatus.audioSession === 'listening'
+    ? voiceStateLabels[voiceState]
+    : 'Start voice support';
+
+  const statusMessage = voiceStatus.errorMessage ??
+    (voiceStatus.audioSession === 'listening'
+      ? 'Audio stays local in this browser session.'
+      : 'Microphone access is required to use voice support.');
 
   return (
     <div className="space-y-6">
@@ -81,7 +120,9 @@ export default function AISupportPage() {
             <span className="absolute inline-flex h-full w-full rounded-full bg-current opacity-75 animate-ping" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-current" />
           </span>
-          {voiceStateLabels[voiceState]}
+          {voiceStatus.audioSession === 'error' || !voiceStatus.browserSupported
+            ? microphoneLabel
+            : voiceStateLabels[voiceState]}
         </div>
       </div>
 
@@ -135,22 +176,12 @@ export default function AISupportPage() {
                     type="button"
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleVoiceAction('START_LISTENING')}
+                    onClick={handleVoiceAction}
+                    disabled={!voiceStatus.browserSupported || voiceStatus.microphonePermission === 'denied'}
                     className="gap-2"
                   >
-                    <Mic className="h-3.5 w-3.5" />
-                    Voice entry
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="subtle"
-                    size="sm"
-                    onClick={() => handleVoiceAction('USER_SPEECH_DETECTED')}
-                    className="gap-2"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Simulate interruption
+                    {voiceStatus.audioSession === 'listening' ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                    {microphoneLabel}
                   </Button>
                 </div>
 
@@ -158,6 +189,19 @@ export default function AISupportPage() {
                   <ArrowUp className="h-3.5 w-3.5" />
                   Send
                 </Button>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5" aria-live="polite">
+                <div className="flex h-8 items-center gap-1" aria-label="Local microphone activity">
+                  {[0.55, 0.8, 1, 0.72, 0.48].map((scale, index) => (
+                    <span
+                      key={index}
+                      className="w-1 rounded-full bg-blue-500 transition-[height,opacity] duration-75"
+                      style={{ height: `${Math.max(4, 8 + amplitude * 22 * scale)}px`, opacity: amplitude > 0.02 ? 0.45 + amplitude * 0.55 : 0.3 }}
+                    />
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500">{statusMessage}</p>
               </div>
             </div>
           </CardContent>

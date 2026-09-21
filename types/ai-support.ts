@@ -8,13 +8,29 @@ export type VoiceState =
 
 export type VoiceEventType =
   | 'START_LISTENING'
+  | 'STOP_LISTENING'
+  | 'USER_SPEECH_STARTED'
+  | 'USER_SPEECH_ENDED'
   | 'USER_AUDIO_DETECTED'
   | 'USER_SPEECH_DETECTED'
   | 'PROCESSING_STARTED'
   | 'AI_RESPONSE_STARTED'
   | 'AI_RESPONSE_STOPPED'
+  | 'CANCEL_TTS'
   | 'INTERRUPT'
   | 'RESET';
+
+export type ConversationVoiceEventType =
+  | 'USER_SPEECH_STARTED'
+  | 'USER_SPEECH_ENDED'
+  | 'USER_INTERRUPTED_ASSISTANT'
+  | 'PROCESSING_STARTED'
+  | 'ASSISTANT_SPEECH_STARTED'
+  | 'ASSISTANT_SPEECH_CANCELLED';
+
+export type MicrophonePermissionState = 'unknown' | 'prompt' | 'granted' | 'denied' | 'unsupported';
+
+export type AudioSessionState = 'idle' | 'requesting' | 'ready' | 'listening' | 'error' | 'closed';
 
 export type ConversationRole = 'user' | 'assistant' | 'system';
 
@@ -49,6 +65,20 @@ export interface VoiceSession {
   createdAt: string;
   updatedAt: string;
   transcript?: string[];
+}
+
+export interface VoiceServiceStatus {
+  microphonePermission: MicrophonePermissionState;
+  audioSession: AudioSessionState;
+  browserSupported: boolean;
+  errorMessage?: string;
+}
+
+export interface ConversationVoiceEvent {
+  id: string;
+  type: ConversationVoiceEventType;
+  timestamp: string;
+  voiceState: VoiceState;
 }
 
 export interface VoiceEvent {
