@@ -7,7 +7,7 @@ import { mapDbActionToActionItem } from './adapters';
  * Action Engine Service Abstraction
  * 
  * Future Architecture:
- * AI Voice Agent decides Next Action -> Dispatches structured action to Action Engine
+ * AI Support Agent decides Next Action -> Dispatches structured action to Action Engine
  * -> Action Engine executes business logic against Supabase / ERP / SMS Gateway
  * -> AI Agent receives execution confirmation and replies to caller.
  * 
@@ -38,7 +38,7 @@ export const ACTION_CATALOG: Record<ActionType, ActionDefinition> = {
   CHECK_CUSTOMER: {
     type: 'CHECK_CUSTOMER',
     label: 'Identify Customer',
-    description: 'Resolve caller phone number against registered CRM profiles',
+    description: 'Resolve the customer against registered CRM profiles',
     icon: 'UserCheck',
     category: 'Read',
   },
@@ -94,7 +94,7 @@ export const ACTION_CATALOG: Record<ActionType, ActionDefinition> = {
   ESCALATE_HUMAN: {
     type: 'ESCALATE_HUMAN',
     label: 'Escalate to Human Agent',
-    description: 'Warm transfer inbound call to supervisor or field manager queue',
+    description: 'Route the support session to a supervisor or field manager queue',
     icon: 'Headset',
     category: 'Escalate',
   },

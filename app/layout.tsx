@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/AppShell';
 export const metadata: Metadata = {
   title: 'HomeCare AI — Customer Support & Service Resolution',
   description:
-    'AI-powered inbound voice customer-support and service-resolution platform for home-appliance companies across India. Understand every customer call. Resolve issues faster. Automate service actions.',
+    'AI-powered website customer-support and service-resolution platform for home-appliance companies. Understand every customer conversation. Resolve issues faster. Automate service actions.',
   keywords: [
     'HomeCare AI',
     'Voice AI',

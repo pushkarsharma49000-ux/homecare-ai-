@@ -193,7 +193,7 @@ export default async function ServiceRequestDetailPage({ params }: Props) {
                       {sr.callId || 'Direct Inbound'}
                     </span>
                     <span className="text-xs text-slate-400">•</span>
-                    <span className="text-xs text-slate-500">Inbound Toll-Free (+91)</span>
+                    <span className="text-xs text-slate-500">AI Support Session</span>
                   </div>
                 </div>
 

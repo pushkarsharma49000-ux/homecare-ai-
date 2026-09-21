@@ -143,7 +143,7 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* Live Calls Snapshot (Section 8) */}
+      {/* Live Support Sessions Snapshot (Section 8) */}
       <Card className="border-blue-100 shadow-sm">
         <CardHeader className="border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -151,9 +151,9 @@ export default async function DashboardPage() {
               <Radio className="w-4 h-4 animate-pulse" />
             </div>
             <div>
-              <CardTitle>Active Live Calls</CardTitle>
+              <CardTitle>Active Support Sessions</CardTitle>
               <p className="text-xs text-slate-500">
-                Inbound customer calls currently being processed by AI Voice Agent
+                Customer conversations currently being processed by the AI Support Agent
               </p>
             </div>
           </div>
@@ -184,7 +184,7 @@ export default async function DashboardPage() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Radio className="w-6 h-6 text-slate-300" />
                       <p className="font-medium text-slate-600">No active live calls in progress</p>
-                      <p className="text-xs text-slate-400">Inbound calls on the +91 telephony line will appear here in real-time.</p>
+                      <p className="text-xs text-slate-400">Active browser support sessions will appear here in real time.</p>
                     </div>
                   </td>
                 </tr>

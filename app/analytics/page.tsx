@@ -95,7 +95,7 @@ export default async function AnalyticsPage() {
           <span className="text-xl font-bold text-slate-900 font-mono mt-1 block">
             {mockOperationalMetrics.callAnswerSpeed}
           </span>
-          <span className="text-[10px] text-slate-400 block mt-0.5">VoiceLink low latency</span>
+          <span className="text-[10px] text-slate-400 block mt-0.5">Browser-based low latency</span>
         </Card>
       </div>
 
@@ -105,8 +105,8 @@ export default async function AnalyticsPage() {
         <Card className="lg:col-span-8 shadow-sm">
           <CardHeader className="border-b border-slate-100">
             <div>
-              <CardTitle>Inbound Call Volume & Resolution Trajectory</CardTitle>
-              <p className="text-xs text-slate-500">Daily inbound calls comparing AI autonomous resolution vs human escalation</p>
+              <CardTitle>Support Session Volume & Resolution Trajectory</CardTitle>
+              <p className="text-xs text-slate-500">Daily support sessions comparing AI autonomous resolution vs human escalation</p>
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5 font-medium text-slate-600">
@@ -166,7 +166,7 @@ export default async function AnalyticsPage() {
           <CardHeader className="border-b border-slate-100">
             <div>
               <CardTitle>AI vs Human Resolution</CardTitle>
-              <p className="text-xs text-slate-500">Aggregated inbound resolution share</p>
+              <p className="text-xs text-slate-500">Aggregated support resolution share</p>
             </div>
           </CardHeader>
           <CardContent className="pt-6 flex flex-col items-center justify-center space-y-6">
@@ -228,8 +228,8 @@ export default async function AnalyticsPage() {
         <Card className="lg:col-span-6 shadow-sm">
           <CardHeader className="border-b border-slate-100">
             <div>
-              <CardTitle>Call Volume by Appliance Category</CardTitle>
-              <p className="text-xs text-slate-500">Distribution of inbound calls across product lines</p>
+              <CardTitle>Support Volume by Appliance Category</CardTitle>
+              <p className="text-xs text-slate-500">Distribution of support sessions across product lines</p>
             </div>
           </CardHeader>
           <CardContent className="pt-5 space-y-4">

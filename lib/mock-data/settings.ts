@@ -73,7 +73,6 @@ export const mockCompanyProfile = {
   companyName: 'HomeCare Appliances Ltd.',
   brandTagline: 'AI-powered customer support for home appliances',
   supportEmail: 'support@homecare.example.in',
-  inboundHelpline: '+91 1800 209 8899 (Toll Free)',
   operatingHours: '24 Hours / 7 Days a week',
   primaryOffice: 'B-Wing, Mindspace Tech Park, Airoli, Navi Mumbai 400708',
   serviceNetworkCities: '42 Cities across India',
@@ -81,15 +80,6 @@ export const mockCompanyProfile = {
 };
 
 export const mockIntegrations = [
-  {
-    id: 'voicelink',
-    name: 'VoiceLink Telephony',
-    category: 'Inbound SIP & PSTN',
-    description: 'Cloud telephony trunking and low-latency bidirectional WebRTC voice streaming for +91 Indian inbound support numbers.',
-    status: 'Not Connected',
-    badgeText: 'Phase 2 Ready',
-    icon: 'PhoneCall',
-  },
   {
     id: 'supabase',
     name: 'Supabase Database',

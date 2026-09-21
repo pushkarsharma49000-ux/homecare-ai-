@@ -87,7 +87,7 @@ export default async function LiveCallDetailPage({ params }: Props) {
                   {call.appliance}
                 </span>
                 <span>•</span>
-                <span className="text-slate-300 font-medium">Inbound Diagnostic Call</span>
+                <span className="text-slate-300 font-medium">Appliance Support Session</span>
               </div>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default async function LiveCallDetailPage({ params }: Props) {
 
           <div className="p-3 bg-slate-50 border-t border-slate-200/80 text-[11px] text-slate-500 flex items-center justify-between">
             <span className="truncate">Sample rate: 16 kHz • Latency: 420 ms • Codec: OPUS</span>
-            <span className="font-semibold text-slate-700">VoiceLink Session</span>
+            <span className="font-semibold text-slate-700">Browser Voice Session</span>
           </div>
         </Card>
 

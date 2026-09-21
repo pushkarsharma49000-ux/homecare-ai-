@@ -47,17 +47,17 @@ export default async function LiveCallsPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
             </span>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Live Calls Monitoring Center</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Live Support Monitoring Center</h1>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Real-time supervisor cockpit for active inbound calls on +91 toll-free telephony
+            Real-time supervisor cockpit for active browser-based support sessions
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Badge variant="live" className="text-xs px-3 py-1">
             <Radio className="w-3.5 h-3.5" />
-            VoiceLink Telephony Connected
+            Browser Voice Ready
           </Badge>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default async function LiveCallsPage() {
             <div>
               <p className="text-xs font-medium text-slate-500">Active Inbound Calls</p>
               <p className="text-2xl font-bold text-slate-900 mt-1">{totalActive}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Live on VoiceLink Trunk</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Live browser sessions</p>
             </div>
             <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
               <PhoneCall className="w-5 h-5" />

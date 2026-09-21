@@ -34,7 +34,7 @@ export const Header: React.FC = () => {
 
         {/* Right Info Section */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Live Inbound Telephony Status */}
+          {/* Browser Voice Agent Status */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -42,7 +42,7 @@ export const Header: React.FC = () => {
             </span>
             <span className="flex items-center gap-1.5">
               <PhoneCall className="w-3 h-3 text-emerald-600" />
-              <span>VoiceLink Trunk: +91 1800 209 8899</span>
+              <span>Browser Voice Agent: Ready</span>
             </span>
           </div>
 

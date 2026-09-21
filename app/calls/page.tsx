@@ -109,15 +109,15 @@ export default function CallsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Call History & Recordings</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Support Session History</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Audit log of customer inbound calls, AI resolutions, and transcript analyses
+            Audit log of customer conversations, AI resolutions, and transcript analyses
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="px-3 py-1 text-xs">
-            {filteredCalls.length} of {calls.length} Calls Recorded
+            {filteredCalls.length} of {calls.length} Sessions Recorded
           </Badge>
           <Button
             variant="outline"

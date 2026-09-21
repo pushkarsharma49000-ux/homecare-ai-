@@ -20,7 +20,7 @@ export const mockServiceRequests: ServiceRequest[] = [
     aiSummary: 'Customer reported loud noise and significant movement during the washing machine spin cycle. Appliance moved several inches on floor.',
     recommendedAction: 'Technician Inspection (Drum suspension damper check and transit bolt verification)',
     timeline: [
-      { id: 't-1', title: 'Call received', description: 'Inbound customer call connected to AI agent', timestamp: '20:16', status: 'completed' },
+      { id: 't-1', title: 'Session started', description: 'Customer support session connected to AI agent', timestamp: '20:16', status: 'completed' },
       { id: 't-2', title: 'Issue identified', description: 'AI categorized problem as excessive mechanical vibration', timestamp: '20:17', status: 'completed' },
       { id: 't-3', title: 'Service request created', description: 'Ticket generated with medium priority under active warranty', timestamp: '20:18', status: 'completed' },
       { id: 't-4', title: 'Awaiting technician assignment', description: 'System routing to Mumbai Worli service hub', timestamp: '20:19', status: 'current' },
@@ -47,7 +47,7 @@ export const mockServiceRequests: ServiceRequest[] = [
     aiSummary: 'Customer reported 1.5T Daikin split AC failing to produce cooling. Diagnostic check determined outdoor compressor fan fails to initiate rotation.',
     recommendedAction: 'Refrigerant pressure leak detection and run-capacitor electrical load test',
     timeline: [
-      { id: 't-11', title: 'Inbound Call Received', description: 'Customer initiated contact via +91 support line', timestamp: '20:10', status: 'completed' },
+      { id: 't-11', title: 'Support Session Started', description: 'Customer initiated contact through the website', timestamp: '20:10', status: 'completed' },
       { id: 't-12', title: 'Diagnostic Completed', description: 'AI verified outdoor unit inactivity', timestamp: '20:11', status: 'completed' },
       { id: 't-13', title: 'Ticket Generated', description: 'High-priority warranty service order raised', timestamp: '20:12', status: 'completed' },
       { id: 't-14', title: 'Technician Assigned', description: 'Assigned to senior HVAC technician Vikram Joshi', timestamp: '20:15', status: 'current' },

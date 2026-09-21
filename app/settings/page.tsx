@@ -419,9 +419,9 @@ export default function SettingsPage() {
         <Card className="shadow-sm">
           <CardHeader className="border-b border-slate-100">
             <div>
-              <CardTitle>External Telephony & Cloud Integrations</CardTitle>
+              <CardTitle>External AI & Cloud Integrations</CardTitle>
               <p className="text-xs text-slate-500">
-                Connected backends for VoiceLink +91 telephony, Supabase database, and Gemini LLM
+                Connected backends for Supabase, AI orchestration, and browser-based voice infrastructure
               </p>
             </div>
             <Badge variant="secondary">Phase 1: Zero External Credentials</Badge>
@@ -436,7 +436,6 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               {mockIntegrations.map((int) => {
-                const isVoice = int.id === 'voicelink';
                 const isDB = int.id === 'supabase';
                 const isAI = int.id === 'gemini';
 
@@ -445,7 +444,6 @@ export default function SettingsPage() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-                          {isVoice && <PhoneCall className="w-5 h-5 text-blue-600" />}
                           {isDB && <Database className="w-5 h-5 text-emerald-600" />}
                           {isAI && <Sparkles className="w-5 h-5 text-indigo-600" />}
                         </div>
@@ -506,11 +504,11 @@ export default function SettingsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-bold text-slate-800 block mb-1">Inbound Toll-Free Line</label>
+                <label className="font-bold text-slate-800 block mb-1">Support Experience</label>
                 <input
                   type="text"
                   readOnly
-                  value={mockCompanyProfile.inboundHelpline}
+                  value="Website chat and browser voice support"
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-slate-800"
                 />
               </div>

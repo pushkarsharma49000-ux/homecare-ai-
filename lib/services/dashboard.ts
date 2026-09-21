@@ -40,12 +40,12 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
     return {
       totalCalls,
       totalCallsSubtitle:
-        totalCalls > 0 ? `${totalCalls} calls recorded in Supabase` : 'No inbound calls recorded yet',
+        totalCalls > 0 ? `${totalCalls} support sessions recorded in Supabase` : 'No support sessions recorded yet',
       aiResolutionRate,
       aiResolutionRateSubtitle:
         totalCalls > 0
-          ? `${resolvedByAICount} calls resolved autonomously`
-          : 'Awaiting call telemetry',
+          ? `${resolvedByAICount} sessions resolved autonomously`
+          : 'Awaiting session telemetry',
       serviceRequestsCount,
       serviceRequestsSubtitle:
         serviceRequestsCount > 0
@@ -58,7 +58,7 @@ export async function getDashboardKPIs(): Promise<DashboardKPIs> {
           : 'Zero human escalations',
       avgCallDuration: formatDuration(avgCallDurationSeconds),
       avgCallDurationSubtitle:
-        totalCalls > 0 ? 'Average inbound call duration' : 'No duration data recorded',
+        totalCalls > 0 ? 'Average support session duration' : 'No duration data recorded',
     };
   } catch (err) {
     console.error('Unexpected error calculating dashboard KPIs:', err);

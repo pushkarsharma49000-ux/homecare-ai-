@@ -236,7 +236,7 @@ export function mapDbServiceRequestToServiceRequest(
     {
       id: 't-1',
       title: 'Service Request Created',
-      description: row.ai_summary || 'Generated via AI inbound voice call analysis',
+      description: row.ai_summary || 'Generated via AI support session analysis',
       timestamp: row.created_at ? new Date(row.created_at).toLocaleString('en-IN') : 'Recent',
       status: 'completed',
     },

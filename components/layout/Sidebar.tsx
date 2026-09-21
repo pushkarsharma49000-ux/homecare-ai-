@@ -80,16 +80,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
         </Link>
       </div>
 
-      {/* Primary Inbound Telephony Badge */}
+      {/* Website AI Support Status */}
       <div className="px-4 py-3 border-b border-slate-800/60 bg-slate-950/40">
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-slate-400 flex items-center gap-1.5 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
-            +91 1800 209 8899
+            Website AI Support
           </span>
-          <span className="text-emerald-400 font-medium">Active</span>
+          <span className="text-emerald-400 font-medium">Live</span>
         </div>
-        <p className="text-[10px] text-slate-500 mt-0.5">Inbound Toll-Free Line</p>
+        <p className="text-[10px] text-slate-500 mt-0.5">Browser voice + chat</p>
       </div>
 
       {/* Navigation Links */}
