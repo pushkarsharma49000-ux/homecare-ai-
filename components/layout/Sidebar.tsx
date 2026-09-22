@@ -14,6 +14,7 @@ import {
   BarChart3,
   Settings,
   Headset,
+  Mic,
   ShieldCheck,
   LogOut,
   ChevronRight,
@@ -33,6 +34,7 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { label: 'Talk to AI', href: '/ai-support', icon: Mic, badge: 'Voice', badgeVariant: 'live' },
   { label: 'AI Sessions', href: '/live-calls', icon: Radio, badge: '6 Live', badgeVariant: 'live' },
   { label: 'Session History', href: '/calls', icon: PhoneCall },
   { label: 'Customers', href: '/customers', icon: Users },

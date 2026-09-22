@@ -50,6 +50,12 @@ const getAudioContextConstructor = () => {
 const browserSupported = () =>
   typeof window !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) && Boolean(getAudioContextConstructor());
 
+const SPEECH_THRESHOLD = 0.055;
+const BARGE_IN_THRESHOLD = 0.09;
+const SPEECH_END_DELAY_MS = 950;
+const BARGE_IN_DEBOUNCE_MS = 320;
+const BARGE_IN_GRACE_MS = 450;
+
 export function transitionVoiceState(currentState: VoiceState, eventType: VoiceEventType): VoiceTransitionResult {
   const transitions: Record<VoiceState, Partial<Record<VoiceEventType, VoiceState>>> = {
     IDLE: { START_LISTENING: 'LISTENING' },
@@ -127,6 +133,7 @@ export class BrowserVoiceService implements VoiceService {
   private captureGain?: GainNode;
   private animationFrame?: number;
   private silenceTimer?: number;
+  private speechStartTimer?: number;
   private speechActive = false;
   private amplitudeListeners = new Set<(amplitude: number) => void>();
   private voiceListeners = new Set<(event: VoiceEvent) => void>();
@@ -140,6 +147,7 @@ export class BrowserVoiceService implements VoiceService {
   private playbackSources = new Set<AudioBufferSourceNode>();
   private playbackTime = 0;
   private playbackGeneration = 0;
+  private assistantSpeechStartedAt = 0;
 
   async createSession(conversationSessionId?: string): Promise<VoiceSession> {
     const now = new Date().toISOString();
@@ -198,7 +206,10 @@ export class BrowserVoiceService implements VoiceService {
 
     this.audioSession = 'requesting';
     try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: false,
+      });
       this.permission = 'granted';
       await this.setupAudioGraph();
       this.audioSession = 'ready';
@@ -343,7 +354,10 @@ export class BrowserVoiceService implements VoiceService {
       this.playbackSources.add(source);
       source.onended = () => {
         this.playbackSources.delete(source);
-        if (this.playbackSources.size === 0 && this.currentState === 'AI_SPEAKING') this.applyVoiceEvent('AI_RESPONSE_STOPPED');
+        if (this.playbackSources.size === 0 && this.currentState === 'AI_SPEAKING') {
+          this.assistantSpeechStartedAt = 0;
+          this.applyVoiceEvent('AI_RESPONSE_STOPPED');
+        }
       };
     } catch {
       this.errorMessage = 'Voice audio could not be played.';
@@ -412,6 +426,7 @@ export class BrowserVoiceService implements VoiceService {
     }
     if (event.type === 'audio') {
       if (this.currentState === 'PROCESSING') this.applyVoiceEvent('AI_RESPONSE_STARTED');
+      if (!this.assistantSpeechStartedAt) this.assistantSpeechStartedAt = performance.now();
       void this.enqueueAudioOutput(event.output);
       return;
     }
@@ -451,10 +466,22 @@ export class BrowserVoiceService implements VoiceService {
       this.analyser.getByteTimeDomainData(data);
       const amplitude = Math.sqrt(data.reduce((sum, value) => sum + (value - 128) ** 2, 0) / data.length) / 128;
       this.amplitudeListeners.forEach((listener) => listener(Math.min(1, amplitude * 3)));
-      const speaking = amplitude > 0.035;
-      if (speaking && !this.speechActive) this.handleSpeechStart();
+      const threshold = this.currentState === 'AI_SPEAKING' ? BARGE_IN_THRESHOLD : SPEECH_THRESHOLD;
+      const speaking = amplitude > threshold;
+      if (speaking && !this.speechActive && !this.speechStartTimer) {
+        const delay = this.currentState === 'AI_SPEAKING' ? BARGE_IN_DEBOUNCE_MS : 0;
+        this.speechStartTimer = window.setTimeout(() => {
+          this.speechStartTimer = undefined;
+          if (this.currentState === 'AI_SPEAKING' && performance.now() - this.assistantSpeechStartedAt < BARGE_IN_GRACE_MS) return;
+          this.handleSpeechStart();
+        }, delay);
+      }
       if (!speaking && this.speechActive && !this.silenceTimer) {
-        this.silenceTimer = window.setTimeout(() => this.handleSpeechEnd(), 650);
+        this.silenceTimer = window.setTimeout(() => this.handleSpeechEnd(), SPEECH_END_DELAY_MS);
+      }
+      if (!speaking && this.speechStartTimer) {
+        window.clearTimeout(this.speechStartTimer);
+        this.speechStartTimer = undefined;
       }
       if (speaking && this.silenceTimer) {
         window.clearTimeout(this.silenceTimer);
@@ -468,8 +495,10 @@ export class BrowserVoiceService implements VoiceService {
   private stopAmplitudeLoop(): void {
     if (this.animationFrame) window.cancelAnimationFrame(this.animationFrame);
     if (this.silenceTimer) window.clearTimeout(this.silenceTimer);
+    if (this.speechStartTimer) window.clearTimeout(this.speechStartTimer);
     this.animationFrame = undefined;
     this.silenceTimer = undefined;
+    this.speechStartTimer = undefined;
     this.speechActive = false;
     this.amplitudeListeners.forEach((listener) => listener(0));
   }
@@ -487,6 +516,7 @@ export class BrowserVoiceService implements VoiceService {
   private handleSpeechEnd(): void {
     this.speechActive = false;
     this.silenceTimer = undefined;
+    this.assistantSpeechStartedAt = 0;
     if (this.currentState === 'USER_SPEAKING') {
       this.applyVoiceEvent('USER_SPEECH_ENDED');
       this.applyVoiceEvent('PROCESSING_STARTED');
