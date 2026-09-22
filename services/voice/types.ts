@@ -46,6 +46,7 @@ export interface VoiceProvider {
 
 export interface VoiceProviderConnectOptions {
   systemContext?: string;
+  accessToken?: string;
 }
 
 export interface VoicePlayback {

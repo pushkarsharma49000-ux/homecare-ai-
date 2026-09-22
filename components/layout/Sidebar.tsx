@@ -15,11 +15,13 @@ import {
   Settings,
   Headset,
   ShieldCheck,
+  LogOut,
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
+import { supabase } from '@/lib/supabase/client';
 
 export interface NavItem {
   label: string;
@@ -48,6 +50,26 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
   const pathname = usePathname();
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setUserEmail(data.session?.user.email ?? null);
+    });
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+    });
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    onNavigate?.();
+  };
 
   return (
     <aside
@@ -164,13 +186,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
             PN
           </div>
           <div className="truncate">
-            <p className="text-xs font-medium text-white truncate">Pooja Nair</p>
-            <p className="text-[10px] text-slate-400 truncate">Operations Lead</p>
+            <p className="text-xs font-medium text-white truncate">{userEmail || 'Operations User'}</p>
+            <p className="text-[10px] text-slate-400 truncate">Authenticated workspace</p>
           </div>
         </div>
-        <span title="Enterprise Access">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-        </span>
+        <div className="flex items-center gap-2">
+          <span title="Authenticated access">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          </span>
+          {userEmail && (
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              title="Sign out"
+              aria-label="Sign out"
+              className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

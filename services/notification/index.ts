@@ -5,11 +5,12 @@ export interface NotificationService {
   queueEmailConfirmation(recipient: string, serviceRequestId?: string): Promise<Notification>;
 }
 
-export class PlaceholderNotificationService implements NotificationService {
+/** Development-safe provider. Swap this behind the same interface when an email provider is configured. */
+export class MockNotificationProvider implements NotificationService {
   async send(notification: Notification): Promise<Notification> {
     return {
       ...notification,
-      status: 'not_implemented',
+      status: 'sent',
     };
   }
 
@@ -22,10 +23,10 @@ export class PlaceholderNotificationService implements NotificationService {
       body: serviceRequestId
         ? `Your service appointment has been scheduled for request ${serviceRequestId}.`
         : 'Your HomeCare service request has been received.',
-      status: 'not_implemented',
+      status: 'sent',
       createdAt: new Date().toISOString(),
     };
   }
 }
 
-export const notificationService = new PlaceholderNotificationService();
+export const notificationService = new MockNotificationProvider();

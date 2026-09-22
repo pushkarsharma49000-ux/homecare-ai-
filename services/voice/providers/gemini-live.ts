@@ -1,6 +1,6 @@
 'use client';
 
-import { GoogleGenAI, Modality } from '@google/genai/web';
+import { GoogleGenAI, Modality, Type } from '@google/genai/web';
 import type { LiveServerMessage, Session } from '@google/genai/web';
 import type {
   VoiceAudioInput,
@@ -37,10 +37,12 @@ export class GeminiLiveProvider implements VoiceProvider {
   private model?: string;
   private listeners = new Set<(event: VoiceProviderEvent) => void>();
   private connection: VoiceConnectionState = 'disconnected';
+  private accessToken?: string;
 
   async connect(options?: VoiceProviderConnectOptions): Promise<void> {
     if (this.connection === 'connected' || this.connection === 'connecting') return;
     this.setConnection('connecting');
+    this.accessToken = options?.accessToken;
 
     try {
       const response = await fetch('/api/voice/session', {
@@ -60,6 +62,15 @@ export class GeminiLiveProvider implements VoiceProvider {
           responseModalities: [Modality.AUDIO],
           inputAudioTranscription: {},
           outputAudioTranscription: {},
+          tools: [{ functionDeclarations: [{
+            name: 'searchKnowledge',
+            description: 'Search verified HomeCare troubleshooting knowledge before giving appliance-specific guidance.',
+            parameters: { type: Type.OBJECT, properties: {
+              query: { type: Type.STRING, description: 'Technical troubleshooting question' },
+              applianceType: { type: Type.STRING, description: 'Appliance type, if known' },
+              category: { type: Type.STRING, description: 'Knowledge category, if known' },
+            }, required: ['query'] },
+          }] }],
         },
         callbacks: {
           onopen: () => this.setConnection('connected'),
@@ -111,6 +122,8 @@ export class GeminiLiveProvider implements VoiceProvider {
   }
 
   private handleMessage(message: LiveServerMessage): void {
+    const toolCall = message.toolCall;
+    if (toolCall?.functionCalls?.length) void this.answerToolCalls(toolCall.functionCalls);
     const content = message.serverContent;
     if (!content) return;
 
@@ -134,6 +147,19 @@ export class GeminiLiveProvider implements VoiceProvider {
         output: { data: base64ToArrayBuffer(message.data), sampleRate: PCM_SAMPLE_RATE, channels: PCM_CHANNELS, mimeType: 'audio/pcm' },
       });
     }
+  }
+
+  private async answerToolCalls(calls: { id?: string; name?: string; args?: Record<string, unknown> }[]): Promise<void> {
+    if (!this.session) return;
+    const functionResponses = await Promise.all(calls.map(async (call) => {
+      if (call.name !== 'searchKnowledge' || !this.accessToken) return { id: call.id, name: call.name, response: { error: 'Verified knowledge is unavailable.' } };
+      try {
+        const response = await fetch('/api/rag/search', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.accessToken}` }, body: JSON.stringify(call.args ?? {}) });
+        const body = await response.json() as { results?: unknown[]; error?: string };
+        return { id: call.id, name: call.name, response: response.ok ? { results: body.results ?? [] } : { error: body.error ?? 'Knowledge search failed.' } };
+      } catch { return { id: call.id, name: call.name, response: { error: 'Knowledge search failed.' } }; }
+    }));
+    this.session.sendToolResponse({ functionResponses });
   }
 
   private setConnection(state: VoiceConnectionState): void {

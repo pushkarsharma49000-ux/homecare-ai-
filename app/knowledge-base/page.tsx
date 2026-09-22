@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BookOpen,
   Search,
@@ -24,6 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { KnowledgeDocument, KnowledgeCategory } from '@/types';
 import { getKnowledgeDocuments } from '@/lib/services/knowledge-base';
+import { supabase } from '@/lib/supabase/client';
 
 const categories: KnowledgeCategory[] = [
   'Air Conditioner',
@@ -36,7 +38,16 @@ const categories: KnowledgeCategory[] = [
   'Troubleshooting',
 ];
 
+interface RetrievalResult {
+  id: string;
+  documentId: string;
+  content: string;
+  score: number;
+  metadata: Record<string, unknown>;
+}
+
 export default function KnowledgeBasePage() {
+  const router = useRouter();
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +55,98 @@ export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [activeDocument, setActiveDocument] = useState<KnowledgeDocument | null>(null);
+  const [ingesting, setIngesting] = useState(false);
+  const [ingestMessage, setIngestMessage] = useState<string | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [retrievalQuery, setRetrievalQuery] = useState('');
+  const [retrievalResults, setRetrievalResults] = useState<RetrievalResult[]>([]);
+  const [retrievalLoading, setRetrievalLoading] = useState(false);
+  const [retrievalError, setRetrievalError] = useState<string | null>(null);
 
+  const ingestDocument = async (documentId: string) => {
+  try {
+    setIngesting(true);
+    setIngestMessage(null);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error('You must be signed in to ingest a knowledge document.');
+    }
+
+    const response = await fetch('/api/rag/ingest', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ documentId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Knowledge document ingestion failed.');
+    }
+
+    setIngestMessage(
+      `Ingested successfully: ${result.chunkCount} chunks with ${result.embeddingDimensions}-dimension embeddings.`
+    );
+  } catch (err: unknown) {
+    setIngestMessage(
+      err instanceof Error ? err.message : 'Knowledge document ingestion failed.'
+    );
+  } finally {
+    setIngesting(false);
+  }
+};
+
+  const searchKnowledge = async () => {
+    const query = retrievalQuery.trim();
+    if (!query) {
+      setRetrievalError('Enter a troubleshooting question to search the knowledge base.');
+      setRetrievalResults([]);
+      return;
+    }
+
+    try {
+      setRetrievalLoading(true);
+      setRetrievalError(null);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        router.replace('/login');
+        return;
+      }
+
+      const response = await fetch('/api/rag/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          query,
+          applianceType: 'Washing Machine',
+          category: 'Troubleshooting',
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error || 'Knowledge search failed.');
+      setRetrievalResults(result.results ?? []);
+    } catch (err: unknown) {
+      setRetrievalResults([]);
+      setRetrievalError(err instanceof Error ? err.message : 'Knowledge search failed.');
+    } finally {
+      setRetrievalLoading(false);
+    }
+  };
   const fetchDocuments = async () => {
     try {
       setLoading(true);
@@ -59,8 +161,26 @@ export default function KnowledgeBasePage() {
   };
 
   useEffect(() => {
-    fetchDocuments();
-  }, []);
+    let active = true;
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
+      if (!data.session) {
+        router.replace('/login');
+        return;
+      }
+      setAuthChecking(false);
+      void fetchDocuments();
+    };
+    void checkSession();
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) router.replace('/login');
+    });
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [router]);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
@@ -76,6 +196,12 @@ export default function KnowledgeBasePage() {
       return matchesSearch && matchesCategory;
     });
   }, [documents, searchTerm, selectedCategory]);
+
+  if (authChecking) {
+    return (
+      <div className="p-12 text-center text-xs text-slate-500">Checking your session...</div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -151,6 +277,73 @@ export default function KnowledgeBasePage() {
         </div>
       </div>
 
+      <Card className="border-blue-100 shadow-sm">
+        <CardHeader className="border-b border-slate-100 pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">Test RAG Retrieval</CardTitle>
+              <p className="mt-1 text-xs text-slate-500">
+                Search grounded troubleshooting guidance for a washing machine.
+              </p>
+            </div>
+            <Badge variant="secondary" className="text-[10px]">Washing Machine · Troubleshooting</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 p-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              value={retrievalQuery}
+              onChange={(event) => setRetrievalQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void searchKnowledge();
+              }}
+              placeholder="Ask a troubleshooting question..."
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            />
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => void searchKnowledge()}
+              disabled={retrievalLoading}
+              className="h-10 justify-center whitespace-nowrap"
+            >
+              {retrievalLoading ? 'Searching...' : 'Search Knowledge'}
+            </Button>
+          </div>
+
+          {retrievalError && (
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+              {retrievalError}
+            </p>
+          )}
+
+          {!retrievalError && retrievalResults.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                {retrievalResults.length} result{retrievalResults.length === 1 ? '' : 's'} found
+              </p>
+              {retrievalResults.map((result) => (
+                <div key={result.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <span className="font-mono text-slate-400">Document: {result.documentId}</span>
+                    <span className="font-semibold text-blue-700">
+                      Similarity: {result.score.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-700">{result.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!retrievalError && !retrievalLoading && retrievalQuery.trim() && retrievalResults.length === 0 && (
+            <p className="text-xs text-slate-500">No matching knowledge chunks found.</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Document Cards Grid */}
       {loading ? (
         <div className="p-12 text-center space-y-3 bg-white rounded-xl border border-slate-200">
@@ -219,13 +412,23 @@ export default function KnowledgeBasePage() {
                 </div>
               </div>
 
-              <div className="p-3.5 px-5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-[11px] text-slate-400">Updated: {doc.lastUpdated}</span>
-                <span className="text-blue-600 font-semibold flex items-center gap-0.5 text-xs">
-                  Read Guide
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
+              <div className="p-3.5 px-5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
+  <span className="text-[11px] text-slate-400">
+    Updated: {doc.lastUpdated}
+  </span>
+
+  <button
+    type="button"
+    onClick={(e) => {
+      e.stopPropagation();
+      void ingestDocument(doc.id);
+    }}
+    disabled={ingesting}
+    className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+  >
+    {ingesting ? 'Ingesting...' : 'Ingest for AI'}
+  </button>
+</div>
             </Card>
           ))}
         </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, Mic, MessageSquareText, ShieldCheck, CalendarCheck2, MicOff } from 'lucide-react';
+import { ArrowUp, Mic, MessageSquareText, ShieldCheck, CalendarCheck2, MicOff, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { BrowserVoiceService, voiceStateLabels } from '@/services/voice';
@@ -18,11 +19,6 @@ const initialMessages = [
     content:
       'Hi there. I can help with troubleshooting, appointment scheduling, and service tracking for your appliance.',
   },
-  {
-    id: 'prompt',
-    role: 'user',
-    content: 'My washing machine is making a very loud noise.',
-  },
 ];
 
 export default function AISupportPage() {
@@ -38,6 +34,8 @@ export default function AISupportPage() {
   const [userTranscript, setUserTranscript] = useState('');
   const [assistantTranscript, setAssistantTranscript] = useState('');
   const [conversationStage, setConversationStage] = useState<ConversationStage>('GREETING');
+  const [isSending, setIsSending] = useState(false);
+  const [sources, setSources] = useState<string[]>([]);
   const voiceServiceRef = useRef<BrowserVoiceService>();
   const providerRef = useRef<GeminiLiveProvider>();
   const orchestratorRef = useRef<ConversationOrchestrator>();
@@ -89,6 +87,21 @@ export default function AISupportPage() {
     };
   }, [orchestrator, provider, voiceService]);
 
+  useEffect(() => {
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetch('/api/support/context', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (!response.ok) return;
+      const context = await response.json() as { customer: { id: string; name: string } | null; appliance: { id: string; appliance_type: string; brand: string; model: string; warranty_end_date: string } | null };
+      if (context.customer || context.appliance) orchestrator.updateContext({
+        customer: { customerId: context.customer?.id ?? null, name: context.customer?.name ?? null },
+        appliance: context.appliance ? { applianceId: context.appliance.id, category: context.appliance.appliance_type, brand: context.appliance.brand, model: context.appliance.model, warrantyStatus: context.appliance.warranty_end_date } : undefined,
+        isDemoContext: !context.customer,
+      });
+    })();
+  }, [orchestrator]);
+
   const statusTone = useMemo(() => {
     switch (voiceState) {
       case 'LISTENING':
@@ -104,29 +117,39 @@ export default function AISupportPage() {
     }
   }, [voiceState]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-
-    setMessages((current) => [
-      ...current,
-      { id: `user-${Date.now()}`, role: 'user', content: trimmed },
-      {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: 'I have your issue and will use appliance context and troubleshooting guidance to help with the next step.',
-      },
-    ]);
-
+    setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: trimmed }]);
     setInput('');
     setVoiceState('PROCESSING');
+    setIsSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Please sign in to use AI Support.');
+      const context = orchestrator.getContext();
+      const response = await fetch('/api/support/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ message: trimmed, applianceType: context.appliance.category, category: context.issue.category }),
+      });
+      const result = await response.json() as { answer?: string; error?: string; sources?: { title?: string }[] };
+      if (!response.ok || !result.answer) throw new Error(result.error ?? 'Unable to respond right now.');
+      orchestrator.handleTranscript({ kind: 'USER_TRANSCRIPT_FINAL', text: trimmed });
+      orchestrator.handleTranscript({ kind: 'ASSISTANT_TRANSCRIPT_FINAL', text: result.answer });
+      setSources((result.sources ?? []).map((source) => source.title).filter((title): title is string => Boolean(title)));
+      const answer = result.answer;
+      setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: 'assistant', content: answer }]);
+    } catch (error) {
+      setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: 'assistant', content: error instanceof Error ? error.message : 'Unable to respond right now.' }]);
+    } finally { setIsSending(false); setVoiceState('IDLE'); }
   };
 
   const handleVoiceAction = async () => {
     if (voiceStatus.audioSession === 'listening') {
       await voiceService.stopListening();
     } else {
-      await voiceService.connectProvider({ systemContext: orchestrator.buildSystemContext() });
+      const { data: { session } } = await supabase.auth.getSession();
+      await voiceService.connectProvider({ systemContext: orchestrator.buildSystemContext(), accessToken: session?.access_token });
       await voiceService.startListening();
     }
     setVoiceStatus(voiceService.getStatus());
@@ -225,11 +248,12 @@ export default function AISupportPage() {
                   </Button>
                 </div>
 
-                <Button type="button" variant="primary" size="sm" onClick={handleSendMessage} className="gap-2">
-                  <ArrowUp className="h-3.5 w-3.5" />
-                  Send
+                <Button type="button" variant="primary" size="sm" onClick={() => void handleSendMessage()} disabled={isSending} className="gap-2">
+                  {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5" />}
+                  {isSending ? 'Searching' : 'Send'}
                 </Button>
               </div>
+              {sources.length > 0 && <p className="mt-2 text-[11px] text-slate-500">Grounded in: {sources.join(', ')}</p>}
 
               <div className="mt-3 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5" aria-live="polite">
                 <div className="flex h-8 items-center gap-1" aria-label="Local microphone activity">

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     if (!documentId) return NextResponse.json({ error: 'document_id is required.' }, { status: 400 });
     const result = await ingestKnowledgeDocument(documentId, createGeminiEmbeddingProvider());
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error) {console.error('RAG INGESTION ERROR:', error);
     if (error instanceof KnowledgeIngestionError) {
       const status = error.code === 'INVALID_DOCUMENT_ID' || error.code === 'EMPTY_CONTENT' ? 400 : error.code === 'DOCUMENT_NOT_FOUND' ? 404 : error.code === 'DOCUMENT_INACTIVE' ? 409 : 502;
       return NextResponse.json({ error: error.message }, { status });
