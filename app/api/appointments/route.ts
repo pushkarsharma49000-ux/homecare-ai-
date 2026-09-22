@@ -18,7 +18,11 @@ export async function POST(request: Request) {
   const event = await calendarProvider.createEvent({ title: 'HomeCare Service Appointment', start: start.toISOString(), end: end.toISOString(), description: `Service request ${id}: ${serviceRequest.issue}` });
   const { data: appointment, error } = await supabase.from('appointments').insert({ service_request_id: id, customer_id: serviceRequest.customer_id, appliance_id: serviceRequest.appliance_id, scheduled_start: start.toISOString(), scheduled_end: end.toISOString(), calendar_event_id: event.id }).select().single();
   if (error) return NextResponse.json({ error: 'Unable to create appointment.' }, { status: 409 });
-  await supabase.from('service_requests').update({ status: 'SCHEDULED', appointment_reference: appointment.id }).eq('id', id);
+  const { error: updateError } = await supabase.from('service_requests').update({ status: 'SCHEDULED', appointment_reference: appointment.id }).eq('id', id);
+  if (updateError) {
+    await supabase.from('appointments').delete().eq('id', appointment.id);
+    return NextResponse.json({ error: 'Appointment could not be finalized.' }, { status: 409 });
+  }
   await notificationService.queueEmailConfirmation(auth.user.email, id);
   return NextResponse.json({ appointment, calendarProvider: event.provider }, { status: 201 });
 }

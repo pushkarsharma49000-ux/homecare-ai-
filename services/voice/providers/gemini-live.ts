@@ -70,6 +70,31 @@ export class GeminiLiveProvider implements VoiceProvider {
               applianceType: { type: Type.STRING, description: 'Appliance type, if known' },
               category: { type: Type.STRING, description: 'Knowledge category, if known' },
             }, required: ['query'] },
+          }, {
+            name: 'createServiceRequest',
+            description: 'Create a real technician service request only after the customer explicitly authorizes technician service. Never say it was created unless this tool returns success.',
+            parameters: { type: Type.OBJECT, properties: {
+              applianceId: { type: Type.STRING, description: 'Current appliance ID from structured context' },
+              applianceType: { type: Type.STRING, description: 'Identified appliance type, for example washing_machine' },
+              brand: { type: Type.STRING, description: 'Appliance brand if known' },
+              model: { type: Type.STRING, description: 'Appliance model if known' },
+              issue: { type: Type.STRING, description: 'Customer reported issue' },
+              diagnosisSummary: { type: Type.STRING, description: 'Brief diagnosis summary' },
+              troubleshootingPerformed: { type: Type.STRING, description: 'Safe checks the customer has completed' },
+              severity: { type: Type.STRING, description: 'Low, Medium, High, or Critical' },
+            }, required: ['applianceType', 'issue'] },
+          }, {
+            name: 'getAppointmentAvailability',
+            description: 'Retrieve actual currently available appointment slots after a real service request exists. Do not imply a slot is booked.',
+            parameters: { type: Type.OBJECT, properties: {} },
+          }, {
+            name: 'bookAppointment',
+            description: 'Book a real appointment only after the customer explicitly confirms the exact offered slot. Never say booked unless this tool returns success.',
+            parameters: { type: Type.OBJECT, properties: {
+              serviceRequestId: { type: Type.STRING, description: 'ID returned by createServiceRequest' },
+              start: { type: Type.STRING, description: 'Exact ISO slot start returned by getAppointmentAvailability' },
+              end: { type: Type.STRING, description: 'Exact ISO slot end returned by getAppointmentAvailability' },
+            }, required: ['serviceRequestId', 'start', 'end'] },
           }] }],
         },
         callbacks: {
@@ -152,12 +177,20 @@ export class GeminiLiveProvider implements VoiceProvider {
   private async answerToolCalls(calls: { id?: string; name?: string; args?: Record<string, unknown> }[]): Promise<void> {
     if (!this.session) return;
     const functionResponses = await Promise.all(calls.map(async (call) => {
-      if (call.name !== 'searchKnowledge' || !this.accessToken) return { id: call.id, name: call.name, response: { error: 'Verified knowledge is unavailable.' } };
+      if (!this.accessToken) return { id: call.id, name: call.name, response: { success: false, error: 'Authentication is required to complete this action.' } };
       try {
-        const response = await fetch('/api/rag/search', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.accessToken}` }, body: JSON.stringify(call.args ?? {}) });
-        const body = await response.json() as { results?: unknown[]; error?: string };
-        return { id: call.id, name: call.name, response: response.ok ? { results: body.results ?? [] } : { error: body.error ?? 'Knowledge search failed.' } };
-      } catch { return { id: call.id, name: call.name, response: { error: 'Knowledge search failed.' } }; }
+        const endpoint = call.name === 'searchKnowledge' ? '/api/rag/search' : call.name === 'createServiceRequest' ? '/api/service-requests' : call.name === 'getAppointmentAvailability' ? '/api/appointments/availability' : call.name === 'bookAppointment' ? '/api/appointments' : null;
+        if (!endpoint) return { id: call.id, name: call.name, response: { success: false, error: 'Unknown action.' } };
+        const response = await fetch(endpoint, {
+          method: call.name === 'getAppointmentAvailability' ? 'GET' : 'POST',
+          headers: { ...(call.name === 'getAppointmentAvailability' ? {} : { 'Content-Type': 'application/json' }), Authorization: `Bearer ${this.accessToken}` },
+          ...(call.name === 'getAppointmentAvailability' ? {} : { body: JSON.stringify(call.args ?? {}) }),
+        });
+        const body = await response.json() as Record<string, unknown>;
+        if (!response.ok) return { id: call.id, name: call.name, response: { success: false, error: typeof body.error === 'string' ? body.error : 'Action could not be completed.' } };
+        if (call.name === 'searchKnowledge') return { id: call.id, name: call.name, response: { success: true, results: body.results ?? [] } };
+        return { id: call.id, name: call.name, response: { success: true, ...body } };
+      } catch { return { id: call.id, name: call.name, response: { success: false, error: 'Action could not be completed.' } }; }
     }));
     this.session.sendToolResponse({ functionResponses });
   }
