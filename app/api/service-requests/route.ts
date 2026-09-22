@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   if (!issue || issue.length > 1000) return NextResponse.json({ error: 'issue is required.' }, { status: 400 });
   let { data: customer } = await supabase.from('customers').select('id').ilike('email', auth.user.email).maybeSingle();
   if (!customer) {
-    const { data: createdCustomer, error } = await supabase.from('customers').insert({ name: auth.user.user_metadata?.full_name || auth.user.email.split('@')[0], email: auth.user.email, phone: 'Not provided', city: 'Not provided', status: 'Active' }).select('id').single();
+    const { data: createdCustomer, error } = await supabase.from('customers').insert({ name: auth.user.user_metadata?.full_name || auth.user.email.split('@')[0], email: auth.user.email, phone: 'Not provided', city: 'Not provided', status: 'active' }).select('id').single();
     if (error || !createdCustomer) {
       console.error('[service-request] customer registration failed', { code: error?.code, message: error?.message });
       return NextResponse.json({ error: 'Unable to register your customer profile.' }, { status: 409 });
