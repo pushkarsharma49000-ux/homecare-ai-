@@ -17,7 +17,10 @@ export async function POST(request: Request) {
   let { data: customer } = await supabase.from('customers').select('id').ilike('email', auth.user.email).maybeSingle();
   if (!customer) {
     const { data: createdCustomer, error } = await supabase.from('customers').insert({ name: auth.user.user_metadata?.full_name || auth.user.email.split('@')[0], email: auth.user.email, phone: 'Not provided', city: 'Not provided', status: 'Active' }).select('id').single();
-    if (error || !createdCustomer) return NextResponse.json({ error: 'Unable to register your customer profile.' }, { status: 409 });
+    if (error || !createdCustomer) {
+      console.error('[service-request] customer registration failed', { code: error?.code, message: error?.message });
+      return NextResponse.json({ error: 'Unable to register your customer profile.' }, { status: 409 });
+    }
     customer = createdCustomer;
   }
   let appliance = applianceId ? (await supabase.from('appliances').select('id, customer_id, appliance_type').eq('id', applianceId).eq('customer_id', customer.id).maybeSingle()).data : null;
@@ -29,7 +32,10 @@ export async function POST(request: Request) {
     appliance = existingAppliance;
     if (!appliance) {
       const { data: createdAppliance, error } = await supabase.from('appliances').insert({ customer_id: customer.id, appliance_type: type, brand: value(body.brand) || 'Not specified', model: value(body.model) || 'Not specified', serial_number: `UNVERIFIED-${crypto.randomUUID()}`, status: 'active', purchase_date: new Date().toISOString().slice(0, 10), warranty_start_date: new Date().toISOString().slice(0, 10), warranty_end_date: new Date().toISOString().slice(0, 10) }).select('id, customer_id, appliance_type').single();
-      if (error || !createdAppliance) return NextResponse.json({ error: 'Unable to register the identified appliance.' }, { status: 409 });
+      if (error || !createdAppliance) {
+        console.error('[service-request] appliance registration failed', { code: error?.code, message: error?.message });
+        return NextResponse.json({ error: 'Unable to register the identified appliance.' }, { status: 409 });
+      }
       appliance = createdAppliance;
     }
     applianceId = appliance.id;
@@ -41,6 +47,9 @@ export async function POST(request: Request) {
     issue, category: appliance.appliance_type, priority: value(body.severity) || 'Medium', status: 'WAITING_FOR_APPOINTMENT',
     ai_summary: value(body.diagnosisSummary) || null, troubleshooting_performed: value(body.troubleshootingPerformed) || null, technician_required: true,
   }).select('id, request_number, status').single();
-  if (error) return NextResponse.json({ error: 'Unable to create service request.' }, { status: 409 });
+  if (error) {
+    console.error('[service-request] insert failed', { code: error.code, message: error.message, details: error.details });
+    return NextResponse.json({ error: 'Unable to create service request. The service-request database schema may need its pending migration applied.' }, { status: 409 });
+  }
   return NextResponse.json({ serviceRequest: created, duplicate: false }, { status: 201 });
 }
