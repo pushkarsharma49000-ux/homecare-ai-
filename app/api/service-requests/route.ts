@@ -44,12 +44,12 @@ export async function POST(request: Request) {
   if (existing) return NextResponse.json({ serviceRequest: existing, duplicate: true });
   const { data: created, error } = await supabase.from('service_requests').insert({
     request_number: `SR-${Date.now().toString().slice(-8)}`, customer_id: customer.id, appliance_id: appliance.id,
-    issue, category: appliance.appliance_type, priority: value(body.severity) || 'Medium', status: 'WAITING_FOR_APPOINTMENT',
+    issue, category: appliance.appliance_type, priority: value(body.severity) || 'Medium', status: 'new',
     ai_summary: value(body.diagnosisSummary) || null, troubleshooting_performed: value(body.troubleshootingPerformed) || null, technician_required: true,
   }).select('id, request_number, status').single();
   if (error) {
-    console.error('[service-request] insert failed', { code: error.code, message: error.message, details: error.details });
+    console.error('[service-request] insert failed', { stage: 'service_request_insert', code: error.code, message: error.message, details: error.details });
     return NextResponse.json({ error: 'Unable to create service request. The service-request database schema may need its pending migration applied.' }, { status: 409 });
   }
-  return NextResponse.json({ serviceRequest: created, duplicate: false }, { status: 201 });
+  return NextResponse.json({ serviceRequest: created, serviceRequestId: created.id, duplicate: false }, { status: 201 });
 }
