@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowUp, Mic, MessageSquareText, ShieldCheck, CalendarCheck2, MicOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
@@ -22,7 +22,7 @@ const initialMessages = [
   },
 ];
 
-export default function AISupportPage() {
+function AISupportContent() {
   const searchParams = useSearchParams();
   const selectedAppliance = searchParams.get('appliance')?.replace(/[^a-z_]/g, '') || '';
   const [messages, setMessages] = useState(initialMessages);
@@ -312,4 +312,8 @@ export default function AISupportPage() {
       </div>
     </div>
   );
+}
+
+export default function AISupportPage() {
+  return <Suspense fallback={<div className="min-h-[50vh]" />}><AISupportContent /></Suspense>;
 }
