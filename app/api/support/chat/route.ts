@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase/server';
-import { createGeminiEmbeddingProvider } from '@/services/rag/embeddings';
-import { SupabaseRAGService } from '@/services/rag';
+import { createGeminiEmbeddingProvider } from '@/lib/rag/embeddings';
+import { SupabaseRAGService } from '@/lib/rag';
 
 export const runtime = 'nodejs';
 

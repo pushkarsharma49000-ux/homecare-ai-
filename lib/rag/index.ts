@@ -1,7 +1,7 @@
 import { getServerSupabase } from '@/lib/supabase/server';
 import type { RAGQuery, RAGResult } from '@/types/ai-support';
-import type { RAGQueryService, KnowledgeChunkMatch } from '@/services/rag/types';
-import type { EmbeddingProvider } from '@/services/rag/embeddings/provider';
+import type { RAGQueryService, KnowledgeChunkMatch } from '@/lib/rag/types';
+import type { EmbeddingProvider } from '@/lib/rag/embeddings/provider';
 
 export interface RAGService extends RAGQueryService {
   getContextSummary(sessionId: string): Promise<string[]>;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSupabase } from '@/lib/supabase/server';
-import { createGeminiEmbeddingProvider } from '@/services/rag/embeddings';
-import { ingestKnowledgeDocument, KnowledgeIngestionError } from '@/services/rag/ingestion';
+import { createGeminiEmbeddingProvider } from '@/lib/rag/embeddings';
+import { ingestKnowledgeDocument, KnowledgeIngestionError } from '@/lib/rag/ingestion';
 
 export const runtime = 'nodejs';
 

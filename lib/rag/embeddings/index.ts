@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import type { EmbeddingOptions, EmbeddingProvider } from '@/services/rag/embeddings/provider';
-import { RAG_EMBEDDING_DIMENSION, RAG_EMBEDDING_MODEL } from '@/services/rag/types';
-import type { EmbeddingResult } from '@/services/rag/types';
+import type { EmbeddingOptions, EmbeddingProvider } from '@/lib/rag/embeddings/provider';
+import { RAG_EMBEDDING_DIMENSION, RAG_EMBEDDING_MODEL } from '@/lib/rag/types';
+import type { EmbeddingResult } from '@/lib/rag/types';
 
 const DOCUMENT_TASK = 'RETRIEVAL_DOCUMENT';
 const QUERY_TASK = 'RETRIEVAL_QUERY';

@@ -1,4 +1,4 @@
-import type { ChunkInput } from '@/services/rag/types';
+import type { ChunkInput } from '@/lib/rag/types';
 
 export interface ChunkingOptions {
   targetTokens?: number;

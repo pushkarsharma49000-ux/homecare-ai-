@@ -1,4 +1,4 @@
-import type { EmbeddingResult } from '@/services/rag/types';
+import type { EmbeddingResult } from '@/lib/rag/types';
 
 export type EmbeddingPurpose = 'document' | 'query';
 

@@ -1,7 +1,7 @@
 import { getServerSupabase } from '@/lib/supabase/server';
-import { chunkDocument } from '@/services/rag/chunking';
-import type { IngestionResult } from '@/services/rag/types';
-import type { EmbeddingProvider } from '@/services/rag/embeddings/provider';
+import { chunkDocument } from '@/lib/rag/chunking';
+import type { IngestionResult } from '@/lib/rag/types';
+import type { EmbeddingProvider } from '@/lib/rag/embeddings/provider';
 import type { DbKnowledgeDocument } from '@/types/supabase';
 
 export type IngestionErrorCode = 'INVALID_DOCUMENT_ID' | 'DOCUMENT_NOT_FOUND' | 'DOCUMENT_INACTIVE' | 'EMPTY_CONTENT' | 'EMBEDDING_FAILED' | 'DATABASE_FAILED';
