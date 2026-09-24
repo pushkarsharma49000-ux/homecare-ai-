@@ -52,7 +52,7 @@ const browserSupported = () =>
 
 const SPEECH_THRESHOLD = 0.055;
 const BARGE_IN_THRESHOLD = 0.09;
-const SPEECH_END_DELAY_MS = 950;
+const SPEECH_END_DELAY_MS = 600;
 const BARGE_IN_DEBOUNCE_MS = 320;
 const BARGE_IN_GRACE_MS = 450;
 
@@ -148,6 +148,15 @@ export class BrowserVoiceService implements VoiceService {
   private playbackTime = 0;
   private playbackGeneration = 0;
   private assistantSpeechStartedAt = 0;
+  private currentTurnId?: string;
+  private speechEndedAt?: number;
+  private previousPerfStageAt?: number;
+
+  private perf(stage: string): void {
+    const timestamp = Date.now();
+    console.info(`[voice-perf] ${stage}`, { turnId: this.currentTurnId ?? 'unassigned', stage, timestamp, sinceSpeechEndMs: this.speechEndedAt ? timestamp - this.speechEndedAt : null, sincePreviousStageMs: this.previousPerfStageAt ? timestamp - this.previousPerfStageAt : null });
+    this.previousPerfStageAt = timestamp;
+  }
 
   async createSession(conversationSessionId?: string): Promise<VoiceSession> {
     const now = new Date().toISOString();
@@ -431,6 +440,8 @@ export class BrowserVoiceService implements VoiceService {
       return;
     }
     if (event.type === 'transcript') {
+      if (event.transcript.kind === 'USER_TRANSCRIPT_FINAL') this.perf('USER_TRANSCRIPT_FINAL');
+      if (event.transcript.kind === 'ASSISTANT_TRANSCRIPT_FINAL') this.perf('ASSISTANT_TURN_COMPLETE');
       this.transcriptListeners.forEach((listener) => listener(event.transcript));
       return;
     }
@@ -504,6 +515,10 @@ export class BrowserVoiceService implements VoiceService {
   }
 
   private handleSpeechStart(): void {
+    this.currentTurnId = `turn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    this.speechEndedAt = undefined;
+    this.previousPerfStageAt = undefined;
+    this.perf('SPEECH_STARTED');
     this.speechActive = true;
     if (this.currentState === 'AI_SPEAKING') {
       this.applyVoiceEvent('USER_SPEECH_DETECTED');
@@ -516,8 +531,12 @@ export class BrowserVoiceService implements VoiceService {
   private handleSpeechEnd(): void {
     this.speechActive = false;
     this.silenceTimer = undefined;
+    this.speechEndedAt = Date.now();
+    this.perf('SPEECH_ENDED');
+    this.provider?.setTurnDiagnostics?.(this.currentTurnId ?? 'unassigned', this.speechEndedAt);
     this.assistantSpeechStartedAt = 0;
     if (this.currentState === 'USER_SPEAKING') {
+      console.info('[latency] USER_SPEECH_END', { at: performance.now() });
       this.applyVoiceEvent('USER_SPEECH_ENDED');
       this.applyVoiceEvent('PROCESSING_STARTED');
     }

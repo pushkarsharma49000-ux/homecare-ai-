@@ -42,6 +42,7 @@ export interface VoiceProvider {
   interrupt(): void;
   close(): void;
   subscribe(listener: (event: VoiceProviderEvent) => void): () => void;
+  setTurnDiagnostics?(turnId: string, speechEndedAt?: number): void;
 }
 
 export interface VoiceProviderConnectOptions {
