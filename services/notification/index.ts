@@ -5,12 +5,12 @@ export interface NotificationService {
   queueEmailConfirmation(recipient: string, serviceRequestId?: string): Promise<Notification>;
 }
 
-/** Development-safe provider. Swap this behind the same interface when an email provider is configured. */
-export class MockNotificationProvider implements NotificationService {
+/** Truthful fallback: appointments remain valid, but no delivery is claimed without a configured provider. */
+export class UnconfiguredNotificationProvider implements NotificationService {
   async send(notification: Notification): Promise<Notification> {
     return {
       ...notification,
-      status: 'sent',
+      status: 'failed',
     };
   }
 
@@ -23,10 +23,10 @@ export class MockNotificationProvider implements NotificationService {
       body: serviceRequestId
         ? `Your service appointment has been scheduled for request ${serviceRequestId}.`
         : 'Your HomeCare service request has been received.',
-      status: 'sent',
+      status: 'failed',
       createdAt: new Date().toISOString(),
     };
   }
 }
 
-export const notificationService = new MockNotificationProvider();
+export const notificationService = new UnconfiguredNotificationProvider();

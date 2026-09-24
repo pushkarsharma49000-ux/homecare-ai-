@@ -10,6 +10,16 @@ HomeCare AI is an enterprise B2B platform purpose-built for home-appliance manuf
 - 📺 **Televisions**
 - 💧 **Water Purifiers**
 
+## Scheduling provider setup
+
+Appointments and service-request updates are stored in Supabase independently of external providers. Configure these values before enabling production calendar or email delivery:
+
+- `APPOINTMENT_TIMEZONE`, `APPOINTMENT_DURATION_MINUTES`, `APPOINTMENT_WORKING_HOURS`
+- `GOOGLE_CALENDAR_ID`, `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`
+- `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`
+
+Without configured calendar or email providers, HomeCare creates the real appointment but accurately reports calendar synchronization as unavailable and does not claim an email was sent.
+
 ---
 
 ## The Customer Experience Journey
