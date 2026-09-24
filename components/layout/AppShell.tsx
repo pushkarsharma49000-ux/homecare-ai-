@@ -1,9 +1,15 @@
+'use client';
+
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { ProductLoopBanner } from '@/components/layout/ProductLoopBanner';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const pathname = usePathname();
+  const isPublic = pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname === '/reset-password' || pathname.startsWith('/auth/');
+  if (isPublic) return <main className="min-h-screen bg-slate-50">{children}</main>;
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Desktop Persistent Sidebar */}

@@ -2,17 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Radio,
-  PhoneCall,
-  Users,
   Tv,
-  Wrench,
-  BookOpen,
-  BarChart3,
-  Settings,
+  ClipboardList,
+  UserRound,
   Headset,
   Mic,
   ShieldCheck,
@@ -33,16 +27,10 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { label: 'Talk to AI', href: '/ai-support', icon: Mic, badge: 'Voice', badgeVariant: 'live' },
-  { label: 'AI Sessions', href: '/live-calls', icon: Radio, badge: '6 Live', badgeVariant: 'live' },
-  { label: 'Session History', href: '/calls', icon: PhoneCall },
-  { label: 'Customers', href: '/customers', icon: Users },
-  { label: 'Appliances', href: '/appliances', icon: Tv },
-  { label: 'Service Requests', href: '/service-requests', icon: Wrench, badge: '34' },
-  { label: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen },
-  { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { label: 'Settings', href: '/settings', icon: Settings },
+  { label: 'Home / AI Support', href: '/ai-support', icon: Mic, badge: 'Voice', badgeVariant: 'live' },
+  { label: 'My Appliances', href: '/my-appliances', icon: Tv },
+  { label: 'My Requests', href: '/my-service-requests', icon: ClipboardList },
+  { label: 'Profile', href: '/profile', icon: UserRound },
 ];
 
 interface SidebarProps {
@@ -52,6 +40,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [userEmail, setUserEmail] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -71,6 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     onNavigate?.();
+    router.replace('/login');
+    router.refresh();
   };
 
   return (
@@ -119,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-          Operations
+          Customer account
         </div>
 
         {navItems.map((item) => {
@@ -188,8 +179,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
             PN
           </div>
           <div className="truncate">
-            <p className="text-xs font-medium text-white truncate">{userEmail || 'Operations User'}</p>
-            <p className="text-[10px] text-slate-400 truncate">Authenticated workspace</p>
+            <p className="text-xs font-medium text-white truncate">{userEmail || 'Customer'}</p>
+            <p className="text-[10px] text-slate-400 truncate">Your HomeCare account</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

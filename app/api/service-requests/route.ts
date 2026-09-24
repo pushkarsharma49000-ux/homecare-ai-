@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { resolveCustomerForUser } from '@/lib/customers/resolve';
 import { getServerSupabase } from '@/lib/supabase/server';
 
 type Payload = { applianceId?: unknown; applianceType?: unknown; brand?: unknown; model?: unknown; issue?: unknown; diagnosisSummary?: unknown; troubleshootingPerformed?: unknown; severity?: unknown };
@@ -20,15 +21,13 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as Payload;
   let applianceId = value(body.applianceId); const issue = value(body.issue);
   if (!issue || issue.length > 1000) return NextResponse.json({ error: 'issue is required.' }, { status: 400 });
-  let { data: customer } = await supabase.from('customers').select('id').ilike('email', auth.user.email).maybeSingle();
-  if (!customer) {
-    const { data: createdCustomer, error } = await supabase.from('customers').insert({ name: auth.user.user_metadata?.full_name || auth.user.email.split('@')[0], email: auth.user.email, phone: 'Not provided', city: 'Not provided', status: 'active' }).select('id').single();
-    if (error || !createdCustomer) {
-      console.error('[service-request] customer registration failed', { code: error?.code, message: error?.message });
-      return NextResponse.json({ error: 'Unable to register your customer profile.' }, { status: 409 });
-    }
-    customer = createdCustomer;
+  let customer;
+  try { customer = await resolveCustomerForUser(supabase, auth.user); }
+  catch (error) {
+    console.error('[service-request] customer registration failed', { code: typeof error === 'object' && error && 'code' in error ? error.code : undefined, message: error instanceof Error ? error.message : 'Unknown error' });
+    return NextResponse.json({ error: 'Unable to register your customer profile.' }, { status: 409 });
   }
+  if (!customer) return NextResponse.json({ error: 'A verified email is required.' }, { status: 400 });
   let appliance = null;
   const applianceIdSupplied = Boolean(applianceId);
   if (applianceId) {
