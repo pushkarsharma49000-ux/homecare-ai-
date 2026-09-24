@@ -30,7 +30,7 @@ export const navItems: NavItem[] = [
   { label: 'Home', href: '/home', icon: Mic },
   { label: 'AI Support', href: '/ai-support', icon: Headset },
   { label: 'My Appliances', href: '/my-appliances', icon: Tv },
-  { label: 'My Requests', href: '/my-service-requests', icon: ClipboardList },
+  { label: 'My Service Requests', href: '/my-requests', icon: ClipboardList },
   { label: 'Profile', href: '/profile', icon: UserRound },
 ];
 

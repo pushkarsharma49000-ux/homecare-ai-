@@ -39,6 +39,7 @@ export default function AISupportPage() {
   const [conversationStage, setConversationStage] = useState<ConversationStage>('GREETING');
   const [isSending, setIsSending] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
+  const [supportContext, setSupportContext] = useState<{ customerName: string | null; applianceType: string | null; applianceName: string | null }>({ customerName: null, applianceType: selectedAppliance || null, applianceName: null });
   const voiceServiceRef = useRef<BrowserVoiceService>();
   const providerRef = useRef<GeminiLiveProvider>();
   const orchestratorRef = useRef<ConversationOrchestrator>();
@@ -48,15 +49,9 @@ export default function AISupportPage() {
   if (!orchestratorRef.current) {
     orchestratorRef.current = new ConversationOrchestrator({
       context: createConversationContext({
-        customer: { name: 'Rahul Sharma', customerId: null },
-        appliance: {
-          applianceId: null,
-          brand: 'Samsung',
-          model: '8kg Front Load Washer',
-          category: 'Washing Machine',
-          warrantyStatus: null,
-        },
-        isDemoContext: true,
+        customer: { name: null, customerId: null },
+        appliance: { applianceId: null, brand: null, model: null, category: null, warrantyStatus: null },
+        isDemoContext: false,
       }),
       onEvent: (event) => setConversationStage(event.stage),
     });
@@ -94,13 +89,14 @@ export default function AISupportPage() {
     void (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const response = await fetch('/api/support/context', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const response = await fetch(`/api/support/context?applianceType=${encodeURIComponent(selectedAppliance)}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
       if (!response.ok) return;
       const context = await response.json() as { customer: { id: string; name: string } | null; appliance: { id: string; appliance_type: string; brand: string; model: string; warranty_end_date: string } | null };
-      if (context.customer || context.appliance) orchestrator.updateContext({
+      setSupportContext({ customerName: context.customer?.name ?? null, applianceType: selectedAppliance || (context.appliance?.appliance_type ?? null), applianceName: context.appliance ? `${context.appliance.brand} ${context.appliance.model}` : null });
+      if (context.customer || context.appliance || selectedAppliance) orchestrator.updateContext({
         customer: { customerId: context.customer?.id ?? null, name: context.customer?.name ?? null },
         appliance: selectedAppliance ? { applianceId: null, category: selectedAppliance, brand: null, model: null, warrantyStatus: null } : context.appliance ? { applianceId: context.appliance.id, category: context.appliance.appliance_type, brand: context.appliance.brand, model: context.appliance.model, warrantyStatus: context.appliance.warranty_end_date } : undefined,
-        isDemoContext: !context.customer,
+        isDemoContext: false,
       });
     })();
   }, [orchestrator, selectedAppliance]);
@@ -285,19 +281,15 @@ export default function AISupportPage() {
             <CardContent className="space-y-3 text-sm text-slate-600">
               <div>
                 <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Customer</p>
-                <p className="mt-1 font-medium text-slate-800">Rahul Sharma</p>
+                <p className="mt-1 font-medium text-slate-800">{supportContext.customerName ?? 'Your account'}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Appliance</p>
-                <p className="mt-1 font-medium text-slate-800">Samsung 8kg Front Load Washer</p>
+                <p className="mt-1 font-medium text-slate-800 capitalize">{(supportContext.applianceType ?? 'Select an appliance').replaceAll('_', ' ')}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Status</p>
-                <p className="mt-1 font-medium text-slate-800">Troubleshooting in progress</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Conversation stage</p>
-                <p className="mt-1 font-medium text-slate-800">{conversationStage.replaceAll('_', ' ')}</p>
+                <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Registered appliance</p>
+                <p className="mt-1 font-medium text-slate-800">{supportContext.applianceName ?? 'Not registered yet'}</p>
               </div>
             </CardContent>
           </Card>
