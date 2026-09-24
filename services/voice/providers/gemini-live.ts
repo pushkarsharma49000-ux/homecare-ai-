@@ -148,7 +148,10 @@ export class GeminiLiveProvider implements VoiceProvider {
 
   private handleMessage(message: LiveServerMessage): void {
     const toolCall = message.toolCall;
-    if (toolCall?.functionCalls?.length) void this.answerToolCalls(toolCall.functionCalls);
+    if (toolCall?.functionCalls?.length) {
+      console.info('[gemini-tool] received', { tools: toolCall.functionCalls.map((call) => call.name ?? 'unknown') });
+      void this.answerToolCalls(toolCall.functionCalls);
+    }
     const content = message.serverContent;
     if (!content) return;
 
@@ -175,24 +178,44 @@ export class GeminiLiveProvider implements VoiceProvider {
   }
 
   private async answerToolCalls(calls: { id?: string; name?: string; args?: Record<string, unknown> }[]): Promise<void> {
-    if (!this.session) return;
+    if (!this.session) {
+      console.error('[gemini-tool] execution skipped', { reason: 'live_session_unavailable', tools: calls.map((call) => call.name ?? 'unknown') });
+      return;
+    }
     const functionResponses = await Promise.all(calls.map(async (call) => {
-      if (!this.accessToken) return { id: call.id, name: call.name, response: { success: false, error: 'Authentication is required to complete this action.' } };
+      const tool = call.name ?? 'unknown';
+      if (!this.accessToken) {
+        console.error('[gemini-tool] execution skipped', { tool, reason: 'authenticated_session_unavailable' });
+        return { id: call.id, name: call.name, response: { success: false, error: 'Authentication is required to complete this action.' } };
+      }
       try {
         const endpoint = call.name === 'searchKnowledge' ? '/api/rag/search' : call.name === 'createServiceRequest' ? '/api/service-requests' : call.name === 'getAppointmentAvailability' ? '/api/appointments/availability' : call.name === 'bookAppointment' ? '/api/appointments' : null;
-        if (!endpoint) return { id: call.id, name: call.name, response: { success: false, error: 'Unknown action.' } };
+        if (!endpoint) {
+          console.error('[gemini-tool] execution skipped', { tool, reason: 'unknown_tool' });
+          return { id: call.id, name: call.name, response: { success: false, error: 'Unknown action.' } };
+        }
+        console.info('[gemini-tool] executing', { tool, endpoint });
         const response = await fetch(endpoint, {
           method: call.name === 'getAppointmentAvailability' ? 'GET' : 'POST',
           headers: { ...(call.name === 'getAppointmentAvailability' ? {} : { 'Content-Type': 'application/json' }), Authorization: `Bearer ${this.accessToken}` },
           ...(call.name === 'getAppointmentAvailability' ? {} : { body: JSON.stringify(call.args ?? {}) }),
         });
         const body = await response.json() as Record<string, unknown>;
+        console.info('[gemini-tool] API completed', { tool, status: response.status });
         if (!response.ok) return { id: call.id, name: call.name, response: { success: false, error: typeof body.error === 'string' ? body.error : 'Action could not be completed.' } };
         if (call.name === 'searchKnowledge') return { id: call.id, name: call.name, response: { success: true, results: body.results ?? [] } };
         return { id: call.id, name: call.name, response: { success: true, ...body } };
-      } catch { return { id: call.id, name: call.name, response: { success: false, error: 'Action could not be completed.' } }; }
+      } catch (error) {
+        console.error('[gemini-tool] execution failed', { tool, reason: error instanceof Error ? error.message : 'unknown_error' });
+        return { id: call.id, name: call.name, response: { success: false, error: 'Action could not be completed.' } };
+      }
     }));
-    this.session.sendToolResponse({ functionResponses });
+    try {
+      this.session.sendToolResponse({ functionResponses });
+      console.info('[gemini-tool] response returned', { tools: calls.map((call) => call.name ?? 'unknown') });
+    } catch (error) {
+      console.error('[gemini-tool] response failed', { reason: error instanceof Error ? error.message : 'unknown_error', tools: calls.map((call) => call.name ?? 'unknown') });
+    }
   }
 
   private setConnection(state: VoiceConnectionState): void {
