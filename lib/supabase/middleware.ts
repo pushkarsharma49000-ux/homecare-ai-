@@ -1,8 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const publicPaths = new Set(['/', '/login', '/signup', '/reset-password', '/auth/callback']);
-const customerPaths = ['/ai-support', '/my-service-requests', '/my-appliances', '/profile'];
+const publicPaths = new Set(['/login', '/signup', '/reset-password', '/auth/callback']);
+const customerPaths = ['/home', '/ai-support', '/my-service-requests', '/my-appliances', '/profile'];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -22,6 +22,9 @@ export async function updateSession(request: NextRequest) {
   });
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL(user ? '/home' : '/login', request.url));
+  }
   if (publicPaths.has(pathname)) return response;
   if (!user) {
     const loginUrl = request.nextUrl.clone();

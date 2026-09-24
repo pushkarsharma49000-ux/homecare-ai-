@@ -4,13 +4,13 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    --background: 38 33% 95%;
+    --foreground: 30 10% 13%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 48%;
+    --primary: 30 10% 13%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 20% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -23,13 +23,13 @@
     --border: 214 20% 90%;
     --input: 214 20% 90%;
     --ring: 217 91% 48%;
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 }
 
 body {
   color: hsl(var(--foreground));
-  background-color: hsl(var(--background));
+  background-color: #f7f4ee;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 

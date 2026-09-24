@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowUp, Mic, MessageSquareText, ShieldCheck, CalendarCheck2, MicOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,8 @@ const initialMessages = [
 ];
 
 export default function AISupportPage() {
+  const searchParams = useSearchParams();
+  const selectedAppliance = searchParams.get('appliance')?.replace(/[^a-z_]/g, '') || '';
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
@@ -96,11 +99,11 @@ export default function AISupportPage() {
       const context = await response.json() as { customer: { id: string; name: string } | null; appliance: { id: string; appliance_type: string; brand: string; model: string; warranty_end_date: string } | null };
       if (context.customer || context.appliance) orchestrator.updateContext({
         customer: { customerId: context.customer?.id ?? null, name: context.customer?.name ?? null },
-        appliance: context.appliance ? { applianceId: context.appliance.id, category: context.appliance.appliance_type, brand: context.appliance.brand, model: context.appliance.model, warrantyStatus: context.appliance.warranty_end_date } : undefined,
+        appliance: selectedAppliance ? { applianceId: null, category: selectedAppliance, brand: null, model: null, warrantyStatus: null } : context.appliance ? { applianceId: context.appliance.id, category: context.appliance.appliance_type, brand: context.appliance.brand, model: context.appliance.model, warrantyStatus: context.appliance.warranty_end_date } : undefined,
         isDemoContext: !context.customer,
       });
     })();
-  }, [orchestrator]);
+  }, [orchestrator, selectedAppliance]);
 
   const statusTone = useMemo(() => {
     switch (voiceState) {
@@ -172,8 +175,8 @@ export default function AISupportPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-blue-600 font-semibold">HomeCare AI Support</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Customer support, reimagined</h1>
+          <p className="text-xs uppercase tracking-[0.18em] text-[#9a7440] font-semibold">HomeCare AI</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#2b2721]">{selectedAppliance ? `${selectedAppliance.replaceAll('_', ' ')} support` : 'How can we help?'}</h1><p className="mt-2 text-sm text-[#756d62]">Tell me what’s happening and we’ll guide you through the next step.</p>
         </div>
 
         <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${statusTone}`}>

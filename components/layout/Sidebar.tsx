@@ -27,7 +27,8 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { label: 'Home / AI Support', href: '/ai-support', icon: Mic, badge: 'Voice', badgeVariant: 'live' },
+  { label: 'Home', href: '/home', icon: Mic },
+  { label: 'AI Support', href: '/ai-support', icon: Headset },
   { label: 'My Appliances', href: '/my-appliances', icon: Tv },
   { label: 'My Requests', href: '/my-service-requests', icon: ClipboardList },
   { label: 'Profile', href: '/profile', icon: UserRound },
@@ -74,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate }) => {
       {/* Brand Header */}
       <div className="p-5 pb-4 border-b border-slate-800/80">
         <Link
-          href="/"
+          href="/home"
           onClick={onNavigate}
           className="flex items-center gap-3 group focus:outline-none"
         >

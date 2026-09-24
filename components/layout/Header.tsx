@@ -1,16 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Menu, X, Bell, Search, PhoneCall, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Menu, X, ChevronDown, Headset, UserRound, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabase/client';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [date, setDate] = useState(''); const router = useRouter();
+  useEffect(() => { setDate(new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }).format(new Date())); void (async () => { const { data: { session } } = await supabase.auth.getSession(); if (!session) return; setEmail(session.user.email ?? ''); const response = await fetch('/api/customer/profile', { headers: { Authorization: `Bearer ${session.access_token}` } }); const body = await response.json().catch(() => ({})) as { customer?: { name?: string } }; setName(body.customer?.name ?? session.user.email?.split('@')[0] ?? 'Customer'); })(); }, []);
+  const signOut = async () => { await supabase.auth.signOut(); router.replace('/login'); router.refresh(); };
 
   return (
     <>
-      <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-subtle">
+      <header className="h-[72px] bg-[#fffdf9]/95 border-b border-[#e5dbcd] px-4 sm:px-7 flex items-center justify-between sticky top-0 z-30 backdrop-blur">
         <div className="flex items-center gap-3">
           {/* Mobile hamburger button */}
           <button
@@ -21,45 +26,15 @@ export const Header: React.FC = () => {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Quick Search */}
-          <div className="relative hidden sm:block w-72 lg:w-96">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search sessions, customers, appliances..."
-              className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-            />
-          </div>
+          <Link href="/home" className="hidden items-center gap-2 text-sm font-semibold text-[#2b2721] sm:flex"><span className="grid h-8 w-8 place-items-center rounded-xl bg-[#29251f] text-[#e7c994]"><Headset className="h-4 w-4" /></span> HomeCare AI</Link>
         </div>
 
         {/* Right Info Section */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Browser Voice Agent Status */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="flex items-center gap-1.5">
-              <PhoneCall className="w-3 h-3 text-emerald-600" />
-              <span>Browser Voice: Available</span>
-            </span>
-          </div>
-
-          {/* Date Indicator */}
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-semibold text-slate-800">20 September 2026</p>
-            <p className="text-[10px] text-slate-500">Sunday • IST (+05:30)</p>
+            <p className="text-xs font-semibold text-[#4b443a]">{date || '—'}</p><p className="text-[10px] text-[#8b8175]">Asia/Kolkata</p>
           </div>
-
-          {/* Notifications button */}
-          <button
-            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg relative transition-colors"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="w-2 h-2 rounded-full bg-blue-600 absolute top-2 right-2 border-2 border-white" />
-          </button>
+          <div className="relative"><button onClick={() => setMenuOpen((open) => !open)} className="flex items-center gap-2 rounded-full p-1 text-left hover:bg-[#f2ece3]" aria-label="Open account menu"><span className="grid h-9 w-9 place-items-center rounded-full bg-[#e8d8bf] text-sm font-semibold text-[#614a2b]">{(name || email || 'C').slice(0, 2).toUpperCase()}</span><span className="hidden sm:block"><span className="block max-w-28 truncate text-xs font-semibold text-[#39342d]">{name || 'Customer'}</span><span className="block max-w-28 truncate text-[10px] text-[#82786c]">{email}</span></span><ChevronDown className="h-4 w-4 text-[#82786c]" /></button>{menuOpen && <div className="absolute right-0 top-12 w-44 rounded-2xl border border-[#e4d9ca] bg-white p-2 shadow-xl"><Link href="/profile" className="block rounded-xl px-3 py-2 text-sm hover:bg-[#f6f1e9]">Profile</Link><Link href="/my-appliances" className="block rounded-xl px-3 py-2 text-sm hover:bg-[#f6f1e9]">My Appliances</Link><Link href="/my-service-requests" className="block rounded-xl px-3 py-2 text-sm hover:bg-[#f6f1e9]">My Requests</Link><button onClick={() => void signOut()} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-[#f6f1e9]"><LogOut className="h-4 w-4" /> Sign Out</button></div>}</div>
         </div>
       </header>
 
